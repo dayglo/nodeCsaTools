@@ -1,0 +1,26 @@
+{
+	"components" : {
+		"dbManager Abstract Components" : {
+			"DB Internal Server v1.0.0" : {
+					"infRefId" : { "type":"STRING", "value":"Undefined", "visible": true }
+			},
+			"DB Internal Service v1.0.0" : {
+					"infRefId" : { "type":"STRING", "value":"Undefined", "visible": true }
+			},
+			"DB DNS Entry v1.0.0" : {
+					"infRefId" : { "type":"STRING", "value":"Undefined", "visible": true }
+			},
+			"DB IP Address v1.0.0" : {
+					"infRefId" : { "type":"STRING", "value":"Undefined", "visible": true }
+			},
+			"DB Directory Entry v1.0.0" : {
+					"infRefId" : { "type":"STRING", "value":"Undefined", "visible": true }
+			},
+			"DB Server Name v1.0.0" : {
+					"infRefId" : { "type":"STRING", "value":"Undefined", "visible": true }
+			}
+		}
+	},
+	"designs": {},
+	"serviceOfferings":{}
+}
