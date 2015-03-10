@@ -1,27 +1,52 @@
 {
 	"components" : {
-		"dbManager Abstract Components" : {
-			"DB Internal Server v1.0.0" : {
-					"infRefId" : { "type":"STRING", "value":"Undefined", "visible": true }
+		"dbCloudManager Abstract Components" : {
+			"DB Internal Server v1.0.0" : { 
+				"properties" : [
+					{"name": "infRefId" , "type":"STRING", "value":"UNDEFINED", "visible": true },
+					{"name":"APPCRITIC" , "type":"STRING" , "value":"UNDEFINED" , "visible":true}
+
+				],
+				"categories":{},
+				"constraints":{}
 			},
-			"DB Internal Service v1.0.0" : {
-					"infRefId" : { "type":"STRING", "value":"Undefined", "visible": true }
+			"DB Internal Service v1.0.0" : { 
+				"properties" : [
+				{"name": "infRefId" , "type":"STRING", "value":"Undefined", "visible": true }
+				],
+				"categories":{},
+				"constraints":{}
 			},
-			"DB DNS Entry v1.0.0" : {
-					"infRefId" : { "type":"STRING", "value":"Undefined", "visible": true }
+			"DB DNS Entry v1.0.0" : { 
+				"properties" : [
+				{"name": "infRefId" , "type":"STRING", "value":"Undefined", "visible": true }
+				],
+				"categories":{},
+				"constraints":{}
 			},
-			"DB IP Address v1.0.0" : {
-					"infRefId" : { "type":"STRING", "value":"Undefined", "visible": true }
+			"DB IP Address v1.0.0" :  {
+				"properties" : [
+				{"name": "infRefId" , "type":"STRING", "value":"Undefined", "visible": true }
+				],
+				"categories":{},
+				"constraints":{}
 			},
-			"DB Directory Entry v1.0.0" : {
-					"infRefId" : { "type":"STRING", "value":"Undefined", "visible": true }
+			"DB Directory Entry v1.0.0" : { 
+				"properties" : [
+				{"name": "infRefId" , "type":"STRING", "value":"Undefined", "visible": true }
+				],
+				"categories":{},
+				"constraints":{}
 			},
-			"DB Server Name v1.0.0" : {
-					"infRefId" : { "type":"STRING", "value":"Undefined", "visible": true }
+			"DB Server Name v1.0.0" : { 
+				"properties" : [
+				{"name": "infRefId" , "type":"STRING", "value":"Undefined", "visible": true }
+				],
+				"categories":{},
+				"constraints":{}
 			}
+		}
 		},
-		"test":{}
-	},
-	"designs": {},
-	"serviceOfferings":{}
-}
+		"designs": {},
+		"serviceOfferings":{}
+	}
