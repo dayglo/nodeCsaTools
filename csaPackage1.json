@@ -19,7 +19,8 @@
 			"DB Server Name v1.0.0" : {
 					"infRefId" : { "type":"STRING", "value":"Undefined", "visible": true }
 			}
-		}
+		},
+		"test":{}
 	},
 	"designs": {},
 	"serviceOfferings":{}
