@@ -34,12 +34,11 @@ var getTask = function (xAuthToken , payload, path ) {
     return function(){
 
         return new Promise(function(resolve, reject) {
-            console.log("   sending command.");
+            console.log("   sending payload with name - " + payload.name);
             rest.postJson(baseUrl + path , payload , httpOptions)
             .spread(
                 function(data){
-                    console.log("worked!")
-                    console.log(data)
+                    console.log("     ok!")
                     resolve(data);
 
                 },
@@ -47,8 +46,10 @@ var getTask = function (xAuthToken , payload, path ) {
                     debugger;
 
                     if (data.code == "PropertyNameUniquenessError") {
-                        resolve("already exists");
+                        console.log("     already exists") ;  
+                        resolve("PropertyNameUniquenessError");
                     } else {
+                        console.log(payload);
                         reject(Error(data.code));
                     }       
                 }
@@ -78,7 +79,7 @@ function buildPropertyTasks(xAuthToken, componentId, properties ) {
 
 
 
-fs.readFile('./' + "csaPackage1.json" , 'utf8' , function (err,data) {
+fs.readFile('./' + "csaPackage1-full.json" , 'utf8' , function (err,data) {
 
     csaPackage = JSON.parse(data);
 
@@ -106,16 +107,17 @@ fs.readFile('./' + "csaPackage1.json" , 'utf8' , function (err,data) {
 
             allTasks = new Array();
 
-            // add a new chainable task for each component
+            // for each component 
             for (componentName in palette) {
                 var component = palette[componentName];
                 var componentId = getIdFromName(csaPaletteData.members , componentName);
                 
+                // add some new task to the allTasks queue for each property
                 var newTasks = buildPropertyTasks(xAuthToken , componentId , component.properties);
                 Array.prototype.push.apply(allTasks,newTasks);
 
             }
-
+            //kick off the promise chain! 
             return allTasks.reduce(Q.when, Q('a')).done();
 
 
