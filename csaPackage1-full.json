@@ -1,0 +1,96 @@
+{
+	"components" : {
+		"dbCloudManager Abstract Components" : {
+			"DB Internal Server v1.0.0" : { 
+				"properties" : [
+					{"name": "infRefId" , "type":"STRING", "value":"UNDEFINED", "visible": true },
+					{"name":"APPCRITIC" , "type":"STRING" , "value":"UNDEFINED" , "visible":true},
+					{"name":"BACKUPENABLE" , "type":"BOOLEAN" , "value":false , "visible":true},
+					{"name":"BACKUPRETENTION" , "type":"INTEGER" , "value":35 , "visible":true},
+					{"name":"BACKUPWINDOW" , "type":"list" , "value":["18:00 – 06:00","21:00 – 09:00","00:00 – 12:00"] , "visible":true},
+					{"name":"CIOWNER" , "type":"STRING" , "value":"UNDEFINED" , "visible":true},
+					{"name":"CONTACT" , "type":"STRING" , "value":"UNDEFINED" , "visible":true},
+					{"name":"COSTCENTER" , "type":"STRING" , "value":"UNDEFINED" , "visible":true},
+					{"name":"DATACENTER" , "type":"list" , "value":["dc1","dc2","dc3","..."] , "visible":true},
+					{"name":"DISK0CLASS" , "type":"list" , "value":["Economy","Regular","Premium","Flash"] , "visible":true},
+					{"name":"DISK0SIZE" , "type":"INTEGER" , "value":100 , "visible":true},
+					{"name":"DISK1CLASS" , "type":"list" , "value":["Economy","Regular","Premium","Flash"] , "visible":true},
+					{"name":"DISK1ENABLE" , "type":"BOOLEAN" , "value":false , "visible":true},
+					{"name":"DISK1FS" , "type":"list" , "value":["NTFS","REISERFS","EXT4","XFS"] , "visible":true},
+					{"name":"DISK1SIZE" , "type":"INTEGER" , "value":100 , "visible":true},
+					{"name":"DISK2CLASS" , "type":"list" , "value":["Economy","Regular","Premium","Flash"] , "visible":true},
+					{"name":"DISK2ENABLE" , "type":"BOOLEAN" , "value":false , "visible":true},
+					{"name":"DISK2FS" , "type":"list" , "value":["NTFS","REISERFS","EXT4","XFS"] , "visible":true},
+					{"name":"DISK2SIZE" , "type":"INTEGER" , "value":100 , "visible":true},
+					{"name":"DISK3CLASS" , "type":"list" , "value":["Economy","Regular","Premium","Flash"] , "visible":true},
+					{"name":"DISK3ENABLE" , "type":"BOOLEAN" , "value":false , "visible":true},
+					{"name":"DISK3FS" , "type":"list" , "value":["NTFS","REISERFS","EXT4","XFS"] , "visible":true},
+					{"name":"DISK3SIZE" , "type":"INTEGER" , "value":100 , "visible":true},
+					{"name":"DISK4CLASS" , "type":"list" , "value":["Economy","Regular","Premium","Flash"] , "visible":true},
+					{"name":"DISK4ENABLE" , "type":"BOOLEAN" , "value":false , "visible":true},
+					{"name":"DISK4FS" , "type":"list" , "value":["NTFS","REISERFS","EXT4","XFS"] , "visible":true},
+					{"name":"DISK4SIZE" , "type":"INTEGER" , "value":100 , "visible":true},
+					{"name":"DISK5CLASS" , "type":"list" , "value":["Economy","Regular","Premium","Flash"] , "visible":true},
+					{"name":"DISK5ENABLE" , "type":"BOOLEAN" , "value":false , "visible":true},
+					{"name":"DISK5FS" , "type":"list" , "value":["NTFS","REISERFS","EXT4","XFS"] , "visible":true},
+					{"name":"DISK5SIZE" , "type":"INTEGER" , "value":100 , "visible":true},
+					{"name":"DRENABLED" , "type":"BOOLEAN" , "value":false , "visible":true},
+					{"name":"ENVIRONMENT" , "type":"list" , "value":["DEV","UAT","PROD"] , "visible":true},
+					{"name":"FQDN" , "type":"STRING" , "value":"UNDEFINED" , "visible":true},
+					{"name":"ISCVLAN" , "type":"list" , "value":["vlanA","vlanB","..."] , "visible":true},
+					{"name":"KBDLAYOUT" , "type":"list" , "value":["layout1","layout2","..."] , "visible":true},
+					{"name":"LOCALE" , "type":"list" , "value":["locale1","locale2"] , "visible":true},
+					{"name":"MANAGED" , "type":"list" , "value":["HP managed","Customer-self-managed"] , "visible":true},
+					{"name":"MEMORY" , "type":"INTEGER" , "value":32 , "visible":true},
+					{"name":"NARID" , "type":"STRING" , "value":"UNDEFINED" , "visible":true},
+					{"name":"OSVERSION" , "type":"list" , "value":["os1","os2","..."] , "visible":true},
+					{"name":"PHYSERVERSIZE" , "type":"STRING" , "value":["Standard Dual CPU","High Dual CPU","Standard Quad CPU","High Quad CPU"] , "visible":true},
+					{"name":"REGION" , "type":"list" , "value":["Americas","Europe","Asia"] , "visible":true},
+					{"name":"SLC" , "type":"list" , "value":["Low","Medium","Critical","Platinum"] , "visible":true},
+					{"name":"U2SVLAN" , "type":"list" , "value":["vlan1","vlan2","..."] , "visible":true},
+					{"name":"VCPU" , "type":"INTEGER" , "value":8 , "visible":true},
+					{"name":"VCPUTYPE" , "type":"list" , "value":["Regular","Over-subscribed","Highly over-subscribed"] , "visible":true}
+				],
+				"categories":{},
+				"constraints":{}
+			},
+			"DB Internal Service v1.0.0" : { 
+				"properties" : [
+				{"name": "infRefId" , "type":"STRING", "value":"Undefined", "visible": true }
+				],
+				"categories":{},
+				"constraints":{}
+			},
+			"DB DNS Entry v1.0.0" : { 
+				"properties" : [
+				{"name": "infRefId" , "type":"STRING", "value":"Undefined", "visible": true }
+				],
+				"categories":{},
+				"constraints":{}
+			},
+			"DB IP Address v1.0.0" :  {
+				"properties" : [
+				{"name": "infRefId" , "type":"STRING", "value":"Undefined", "visible": true }
+				],
+				"categories":{},
+				"constraints":{}
+			},
+			"DB Directory Entry v1.0.0" : { 
+				"properties" : [
+				{"name": "infRefId" , "type":"STRING", "value":"Undefined", "visible": true }
+				],
+				"categories":{},
+				"constraints":{}
+			},
+			"DB Server Name v1.0.0" : { 
+				"properties" : [
+				{"name": "infRefId" , "type":"STRING", "value":"Undefined", "visible": true }
+				],
+				"categories":{},
+				"constraints":{}
+			}
+		}
+		},
+		"designs": {},
+		"serviceOfferings":{}
+	}

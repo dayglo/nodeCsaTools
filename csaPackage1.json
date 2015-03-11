@@ -4,7 +4,7 @@
 			"DB Internal Server v1.0.0" : { 
 				"properties" : [
 					{"name": "infRefId" , "type":"STRING", "value":"UNDEFINED", "visible": true },
-					{"name":"APPCRITIC" , "type":"STRING" , "value":"UNDEFINED" , "visible":true}
+					{"name":"BACKUPWINDOW" , "type":"list" , "value": ["18:00 – 06:00","21:00 – 09:00","00:00 – 12:00"] , "visible":true}
 
 				],
 				"categories":{},
