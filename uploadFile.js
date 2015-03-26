@@ -19,18 +19,18 @@ fileUpload.uploadDesign = function (url, filename, username, password) {
 		};
 
 		var formData = {
-		  update: 'false',
-		  updatePreserveExisting: 'false',
-		  validateType:"SERVICE_BLUEPRINT",
-		  previewImport: 'false',
+			update: 'false',
+			updatePreserveExisting: 'false',
+			validateType:"SERVICE_BLUEPRINT",
+			previewImport: 'false',
 
-		  file: {
-		    value:  fs.createReadStream("./" + filename),
-		    options: {
-		      filename: filename,
-		      contentType: 'application/zip'
-		    }
-		  }
+			file: {
+				value:  fs.createReadStream("./" + filename),
+				options: {
+					filename: filename,
+					contentType: 'application/zip'
+				}
+			}
 		};
 
 		var options = {
@@ -42,16 +42,15 @@ fileUpload.uploadDesign = function (url, filename, username, password) {
 		};
 
 		request.post(options, function optionalCallback(err, httpResponse, body) {
-		  
-		  if (err) {
-		  			  	debugger;
-		  	console.log('problem with request: ' + err.message);
-		    reject(Error('problem with request: ' + err.message)); 
-		  } else {
-		  	console.log(body);
-		  	resolve(body);
-		  }
-		  
+			
+			if (err) {
+				console.log('problem with request: ' + err.message);
+				reject(Error('problem with request: ' + err.message)); 
+			} else {
+				console.log(body);
+				resolve(body);
+			}
+			
 		});
 	});
 
