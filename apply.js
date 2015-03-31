@@ -8,6 +8,7 @@ chalk = require('chalk');
 var glob = require("glob");
 var fs = require('fs');
 
+
 var ncp = require('ncp').ncp;
 
 var xpath = require('xpath'),
@@ -42,34 +43,7 @@ IdmCallOptions = {
 	password: creds.idmPw
 }
 
-var getTask = function (xAuthToken , payload, path ) {
-	return function(){
 
-		return new Promise(function(resolve, reject) {
-			console.log("   sending payload with name - " + payload.name);
-			rest.postJson(baseUrl + path , payload , httpOptions)
-			.spread(
-				function(data){
-					console.log("     ok!")
-					resolve(data);
-
-				},
-				function(data){
-					debugger;
-
-					if (data.code == "PropertyNameUniquenessError") {
-						console.log("     already exists") ;  
-						resolve("PropertyNameUniquenessError");
-					} else {
-						console.log(payload);
-						reject(Error(data.code));
-					}       
-				}
-				);
-
-		});
-	}
-}
 
 function getIdFromName(data , name){
 	var id = ""
@@ -83,31 +57,11 @@ function getIdFromName(data , name){
 
 function buildPropertyTasks(xAuthToken, componentId, properties ) {
 	var tasks = properties.map(function(p){
-		return getTask(xAuthToken, csaUtils.getPropertyPayload(componentId, p.name, p.value , p.type ) , "csa/api/property" )
+		return csaUtils.getTask(xAuthToken, csaUtils.getPropertyPayload(componentId, p.name, p.value , p.type ) , baseUrl + "csa/api/property" )
 	});
 	return tasks;
 }
 
-
-
-function loginAndGetToken(baseUrl , credentialData ,IdmCallOptions) {
-
-	return new Promise(function(resolve, reject) {
-
-		rest.postJson(baseUrl + 'idm-service/v2.0/tokens/', credentialData ,IdmCallOptions )
-		.spread(
-			function(data){
-				console.log("logged in.")
-				console.log("got token.");
-				resolve(data.token.id);
-			},
-			function(data){
-				reject(Error(data.code));       
-			}
-		);
-
-	});  
-}
 
 function createComponents(packageFile) {
 
@@ -120,7 +74,7 @@ function createComponents(packageFile) {
 		//login
 		console.log("retrieving auth token for " + creds.u + " in organisation " + creds.org);
 
-		loginAndGetToken(baseUrl , credentialData ,IdmCallOptions)
+		csaUtils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions)
 		.then(function(xAuthToken){
 			//logged in
 
@@ -150,14 +104,11 @@ function createComponents(packageFile) {
 				//kick off the promise chain! 
 				return allTasks.reduce(Q.when, Q('a')).done();
 
-
 			},function(error){
 				console.log("errorall:")
 				debugger;
 				console.log(error.toString())
 			});
-
-
 		},function(error){
 			console.log("errorall:")
 			debugger;
@@ -270,6 +221,7 @@ function createZip(folderPath , outputPath) {
 				} catch (err) {
 					reject(err)
 				}
+				
 			});
 		})
 	}
@@ -292,11 +244,10 @@ function createDesigns(packageFile) {
 		.then(editXmlFile(newDesignName, designUuid))
 		.then(writeFile(fullFilePath))
 		.then(createZip('./tmp/' + newDesignFileName , outputZipFilePath))
-		.then(loginAndGetToken(baseUrl , credentialData ,IdmCallOptions))
+		.then(csaUtils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions))
 		.then(function(xAuthToken){
 
-
-			return uploadFile.uploadDesign('https://vm01:8444/csa/rest/import?userIdentifier=90d96588360da0c701360da0f1d600a1&exceptionCode=200',
+			return uploadFile.uploadDesign(baseUrl + '/csa/rest/import?userIdentifier=90d96588360da0c701360da0f1d600a1&exceptionCode=200',
 											outputZipFilePath,
 											creds.u,
 											creds.pw);
@@ -318,7 +269,7 @@ function copyFolder(source, destination){
 }
 
 
-//createComponents('./' + "csaPackage1-full.json");
-createDesigns('./' + "csaPackage1-full.json");
+createComponents('./' + "csaPackage1-full.json");
+//createDesigns('./' + "csaPackage1-full.json");
 
 

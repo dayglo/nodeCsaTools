@@ -1,4 +1,9 @@
 //csautils
+
+require('es6-promise').polyfill();
+rest = require('restler-q').spread;
+var S = require('string');
+
 csaUtils = {}
  
 csaUtils.getPropertyPayload = function (global_id, name , value, type) {
@@ -66,6 +71,61 @@ csaUtils.getComponentPayload = function ( name , description , consumerVisible) 
         "csa_parent": null
       }
     }
+}
+
+csaUtils.loginAndGetToken =  function (baseUrl , credentialData ,IdmCallOptions) {
+
+  return new Promise(function(resolve, reject) {
+
+    rest.postJson(baseUrl + 'idm-service/v2.0/tokens/', credentialData ,IdmCallOptions )
+    .spread(
+      function(data){
+        console.log("logged in.")
+        console.log("got token.");
+        resolve(data.token.id);
+      },
+      function(data){
+        reject(Error(data.code));       
+      }
+    );
+
+  });  
+}
+
+csaUtils.getTask = function (xAuthToken , payload, url ,httpOptions, desc) {
+  return function(){
+
+    return new Promise(function(resolve, reject) {
+      console.log(desc);
+      rest.postJson(url , payload , httpOptions)
+      .spread(
+        function(data){
+          debugger;
+          console.log("     ok!")
+          resolve(data);
+
+
+        },
+        function(data){
+          debugger;
+
+          if (data.code == "PropertyNameUniquenessError") {
+            console.log("     already exists") ;  
+            resolve("PropertyNameUniquenessError");
+
+          }else if (S(data).contains('HTTP Status 415')) {
+            console.log("     result: failed with 415") ;  
+            resolve("failed with 415");
+
+          } else {
+            console.log(data);
+            reject(Error(data.code));
+          }       
+        }
+        );
+
+    });
+  }
 }
  
 module.exports = csaUtils;
