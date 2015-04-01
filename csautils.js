@@ -3,6 +3,7 @@
 require('es6-promise').polyfill();
 rest = require('restler-q').spread;
 var S = require('string');
+var request = require('request');
 
 csaUtils = {}
  
@@ -127,5 +128,45 @@ csaUtils.getTask = function (xAuthToken , payload, url ,httpOptions, desc) {
     });
   }
 }
+
+csaUtils.sendForm = function(username,password,url,xAuthToken){
+  return function(){
+    return new Promise(function(resolve, reject) {
+
+      var authString = 'Basic ' + new Buffer(username + ':' + password).toString('base64');
+
+      var headers = {
+        "Authorization" : authString,
+        "X-Auth-Token" : xAuthToken
+      };
+
+      var formData = {
+        requestForm : '{  "categoryName": "ACCESSORY",  "subscriptionName": "Virtual Linux Server v01.00 (1.0.0)",  "startDate": "2015-03-30T10:47:42.000Z",  "fields": {    "field_2c9030e44c4645c1014c55f364b60d7b": true,    "field_2c9030e44c4645c1014c55f364b70d83": "1",    "field_2c9030e44c4645c1014c55f364b60d7f": "2",    "field_2c9030e44c4645c1014c55f364b60d70": true,    "field_2c9030e44c4645c1014c55f364b70d86": 4,    "field_2c9030e44c4645c1014c55f364b60d74": 1  },  "action": "ORDER"}'
+      };
+
+      var options = {
+        method: 'POST',
+        headers: headers,
+        rejectUnauthorized: false,
+        url: url,
+        formData: formData
+      };
+
+      request.post(options, function optionalCallback(err, httpResponse, body) {
+        
+        if (err) {
+          console.log('problem with request: ' + err.message);
+          reject(Error('problem with request: ' + err.message)); 
+        } else {
+          console.log(body);
+          resolve(body);
+        }
+        
+      });
+    });
+
+  }
+}
+
  
 module.exports = csaUtils;

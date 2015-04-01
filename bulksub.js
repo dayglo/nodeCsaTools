@@ -93,67 +93,50 @@ csaUtils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions)
 
 		debugger;
 
-		var subRequestOptions = myHttpOptions;
-		subRequestOptions.headers['Content-Type'] = 'multipart/form-data; boundary=ftbydrydrtybtyd';
-		subRequestOptions.headers['X-Auth-Token'] = xAuthToken;
+		// var subRequestOptions = myHttpOptions;
+		// subRequestOptions.headers['Content-Type'] = 'multipart/form-data; boundary=ftbydrydrtybtyd';
+		// subRequestOptions.headers['X-Auth-Token'] = xAuthToken;
 
-		var suboptions = JSON.stringify(buildRequestOptions(data));
-		var suboptionsStripped = suboptions.substr(1,suboptions.length - 2); // urgh
-		var payload = ""+
-			'--ftbydrydrtybtyd\n'+
-			'Content-Disposition: form-data; name="requestForm"\n'+
-			'\n'+
-			'{\n'+
-			'  "categoryName": "ACCESSORY",\n'+
-			'  "subscriptionName": "test bulk",\n'+
-			'  "startDate": "'+  moment().format() +'",\n'+
-			suboptionsStripped + ',\n'+
-			'  "action": "ORDER"\n'+
-			'}\n'+
-			'\n'+
-			'--ftbydrydrtybtyd--\n'
+		// var suboptions = JSON.stringify(buildRequestOptions(data));
+		// var suboptionsStripped = suboptions.substr(1,suboptions.length - 2); // urgh
+		// var payload = ""+
+		// 	'--ftbydrydrtybtyd\n'+
+		// 	'Content-Disposition: form-data; name="requestForm"\n'+
+		// 	'\n'+
+		// 	'{\n'+
+		// 	'  "categoryName": "ACCESSORY",\n'+
+		// 	'  "subscriptionName": "test bulk",\n'+
+		// 	'  "startDate": "'+  moment().format() +'",\n'+
+		// 	suboptionsStripped + ',\n'+
+		// 	'  "action": "ORDER"\n'+
+		// 	'}\n'+
+		// 	'\n'+
+		// 	'--ftbydrydrtybtyd--\n'
 
-			payload = '{  "categoryName": "ACCESSORY",  "subscriptionName": "Virtual Linux Server v01.00 (1.0.0)",  "startDate": "2015-03-30T10:47:42.000Z",  "fields": {    "field_2c9030e44c4645c1014c55f364b60d7b": true,    "field_2c9030e44c4645c1014c55f364b70d83": "1",    "field_2c9030e44c4645c1014c55f364b60d7f": "2",    "field_2c9030e44c4645c1014c55f364b60d70": true,    "field_2c9030e44c4645c1014c55f364b70d86": 4,    "field_2c9030e44c4645c1014c55f364b60d74": 1  },  "action": "ORDER"}';
+			//payload = '{  "categoryName": "ACCESSORY",  "subscriptionName": "Virtual Linux Server v01.00 (1.0.0)",  "startDate": "2015-03-30T10:47:42.000Z",  "fields": {    "field_2c9030e44c4645c1014c55f364b60d7b": true,    "field_2c9030e44c4645c1014c55f364b70d83": "1",    "field_2c9030e44c4645c1014c55f364b60d7f": "2",    "field_2c9030e44c4645c1014c55f364b60d70": true,    "field_2c9030e44c4645c1014c55f364b70d86": 4,    "field_2c9030e44c4645c1014c55f364b60d74": 1  },  "action": "ORDER"}';
+		
 
+		subCreateTask = csaUtils.sendForm(creds.u,creds.pw,subscriptionRequestUrl,xAuthToken);
 
-// 		var tasks = new Array();
-// 		for (var i = 0 ; i < 10 ; i++) {
-			
-// 			tasks.push(csaUtils.getTask(xAuthToken, payload , subscriptionRequestUrl , subRequestOptions , " creating sub " + i ));
-
-// 		}
+		subCreateTask();
 
 
+		// debugger;
 
-// 		parallelTasks = createParallelTask(tasks , "ten parallel tasks");
+		// var allParallelTasks = new Array();
+		// var chunks = 2;
+		// var tasksPerChunk = 5;
 
-// debugger;
-// 		parallelTasks();
+		// for (var i = 0 ; i < chunks ; i++) {
+		// 	var tasks = new Array();
+		// 	for (var j = 0 ; j < tasksPerChunk ; j++) {
+		// 		tasks.push(csaUtils.getTask(xAuthToken, payload , subscriptionRequestUrl , subRequestOptions , " creating sub " + i + '.' + j));
+		// 	}
+		// 	allParallelTasks.push( createParallelTask(tasks , "some parallel tasks") )
+		// }
 
-
-		var allParallelTasks = new Array()
-		var chunks = 200;
-		var tasksPerChunk = 10;
-
-		for (var i = 0 ; i < chunks ; i++) {
-			var tasks = new Array();
-			for (var j = 0 ; j < tasksPerChunk ; j++) {
-				tasks.push(csaUtils.getTask(xAuthToken, payload , subscriptionRequestUrl , subRequestOptions , " creating sub " + i + '.' + j));
-			}
-			allParallelTasks.push( createParallelTask(tasks , "some parallel tasks") )
-		}
-
-		debugger;
-
-
-
-
-		 //kick off the promise chain! 
-		return allParallelTasks.reduce(Q.when, Q('a')).done();
-
-
-
-
+		//  //kick off the promise tree! 
+		// return allParallelTasks.reduce(Q.when, Q('a')).done();
 
 
 	},function(err){
