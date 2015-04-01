@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<manifest>
+	<archiveItems>
+		<item>import.xml</item>
+		<itemLocation>com.hp.csa.model.vo.service.ServiceBlueprintVO</itemLocation>
+		<itemType>com.hp.csa.model.vo.service.ServiceBlueprintVO</itemType>
+	</archiveItems>
+	<archiveItems>
+		<item>size-small.png</item>
+		<itemLocation>\images\library\size-small.png</itemLocation>
+		<itemType>File</itemType>
+	</archiveItems>
+	<archiveItems>
+		<item>Service_Design.png</item>
+		<itemLocation>\images\library\Service_Design.png</itemLocation>
+		<itemType>File</itemType>
+	</archiveItems>
+	<csaVersion>04.20.0000.0</csaVersion>
+</manifest>

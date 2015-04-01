@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?><ServiceBlueprint>
+	<id>cc782900d70611e48cf50fc7b507c46e</id>
+	<objectId>cc782900d70611e48cf50fc7b507c46e</objectId>
+	<createdOn>2015-03-12T13:08:54.970Z</createdOn>
+	<updatedOn>2015-03-12T13:08:54.970Z</updatedOn>
+	<createdBy>
+		<id>90d96588360da0c701360da0f1d600a1</id>
+		<objectId>90d96588360da0c701360da0f1d600a1</objectId>
+		<isCriticalSystemObject>true</isCriticalSystemObject>
+		<description>admin</description>
+		<iconUrl>http://localhost/admin</iconUrl>
+		<name>admin</name>
+		<displayName>admin</displayName>
+		<disabled>false</disabled>
+	</createdBy>
+	<updatedBy>
+		<id>90d96588360da0c701360da0f1d600a1</id>
+		<objectId>90d96588360da0c701360da0f1d600a1</objectId>
+		<isCriticalSystemObject>true</isCriticalSystemObject>
+		<description>admin</description>
+		<iconUrl>http://localhost/admin</iconUrl>
+		<name>admin</name>
+		<displayName>admin</displayName>
+		<disabled>false</disabled>
+	</updatedBy>
+	<isCriticalSystemObject>false</isCriticalSystemObject>
+	<description>test</description>
+	<iconUrl>/csa/images/library/Service_Design.png</iconUrl>
+	<name>cc7d0b01-d706-11e4-8cf5-0fc7b507c46e</name>
+	<displayName>waaaat</displayName>
+	<state>
+		<id>90d96588360da0c701360da0ef470038</id>
+		<objectId>90d96588360da0c701360da0ef470038</objectId>
+		<createdOn>2014-07-14T02:37:07.336+01:00</createdOn>
+		<isCriticalSystemObject>true</isCriticalSystemObject>
+		<description>Active</description>
+		<iconUrl>/csa/images/categories/artifact_state/active.png</iconUrl>
+		<name>ACTIVE</name>
+		<displayName>Active</displayName>
+		<disabled>false</disabled>
+		<categoryType>
+			<id>90d96588360da0c701360da0ef420037</id>
+			<objectId>90d96588360da0c701360da0ef420037</objectId>
+			<isCriticalSystemObject>true</isCriticalSystemObject>
+			<description>Artifact State</description>
+			<name>ARTIFACT_STATE</name>
+			<displayName>Artifact State</displayName>
+			<extensible>false</extensible>
+		</categoryType>
+	</state>
+	<optionModel>
+		<id>cc7d0b00d70611e48cf50fc7b507c46e</id>
+		<objectId>cc7d0b00d70611e48cf50fc7b507c46e</objectId>
+		<createdOn>2015-03-12T13:08:54.970Z</createdOn>
+		<updatedOn>2015-03-12T13:08:54.985Z</updatedOn>
+		<createdBy>
+			<id>90d96588360da0c701360da0f1d600a1</id>
+			<objectId>90d96588360da0c701360da0f1d600a1</objectId>
+			<isCriticalSystemObject>true</isCriticalSystemObject>
+			<description>admin</description>
+			<iconUrl>http://localhost/admin</iconUrl>
+			<name>admin</name>
+			<displayName>admin</displayName>
+			<disabled>false</disabled>
+		</createdBy>
+		<updatedBy>
+			<id>90d96588360da0c701360da0f1d600a1</id>
+			<objectId>90d96588360da0c701360da0f1d600a1</objectId>
+			<isCriticalSystemObject>true</isCriticalSystemObject>
+			<description>admin</description>
+			<iconUrl>http://localhost/admin</iconUrl>
+			<name>admin</name>
+			<displayName>admin</displayName>
+			<disabled>false</disabled>
+		</updatedBy>
+		<isCriticalSystemObject>false</isCriticalSystemObject>
+		<name>MinimalDesign</name>
+		<artifactContainsDelegatedTopologies>false</artifactContainsDelegatedTopologies>
+	</optionModel>
+	<artifactType>
+		<id>90d96588360da0c701360da0eec00018</id>
+		<objectId>90d96588360da0c701360da0eec00018</objectId>
+		<createdOn>2014-07-14T02:37:07.961+01:00</createdOn>
+		<isCriticalSystemObject>true</isCriticalSystemObject>
+		<description>Service Blueprint</description>
+		<iconUrl>/csa/images/categories/artifact_type/service_blueprint.png</iconUrl>
+		<name>SERVICE_BLUEPRINT</name>
+		<displayName>Service Blueprint</displayName>
+		<disabled>false</disabled>
+		<categoryType>
+			<id>90d96588360da0c701360da0eeb40017</id>
+			<objectId>90d96588360da0c701360da0eeb40017</objectId>
+			<isCriticalSystemObject>true</isCriticalSystemObject>
+			<description>Artifact Type</description>
+			<name>ARTIFACT_TYPE</name>
+			<displayName>Artifact Type</displayName>
+			<extensible>false</extensible>
+		</categoryType>
+	</artifactType>
+	<disabled>false</disabled>
+	<tag>
+		<id>2c9030e44b49c11f014b4f09affa0272</id>
+		<createdOn>2015-02-03T03:43:29.929Z</createdOn>
+		<updatedOn>2015-02-03T03:43:29.929Z</updatedOn>
+		<isCriticalSystemObject>false</isCriticalSystemObject>
+		<iconUrl>/csa/images/library/size-small.png</iconUrl>
+		<name>Gee_Designs_3870bfb9-3c86-49ba-a4d3-83a5a881d774</name>
+		<displayName>Gee Designs</displayName>
+		<artifactType>
+			<id>90d96588360da0c701360da0eec00018</id>
+			<createdOn>2014-07-14T02:37:07.961+01:00</createdOn>
+			<isCriticalSystemObject>true</isCriticalSystemObject>
+			<description>Service Blueprint</description>
+			<iconUrl>/csa/images/categories/artifact_type/service_blueprint.png</iconUrl>
+			<name>SERVICE_BLUEPRINT</name>
+			<displayName>Service Blueprint</displayName>
+			<disabled>false</disabled>
+			<categoryType>
+				<id>90d96588360da0c701360da0eeb40017</id>
+				<createdOn>2014-07-14T02:37:07.117+01:00</createdOn>
+				<isCriticalSystemObject>true</isCriticalSystemObject>
+				<description>Artifact Type</description>
+				<name>ARTIFACT_TYPE</name>
+				<displayName>Artifact Type</displayName>
+				<extensible>false</extensible>
+			</categoryType>
+		</artifactType>
+		<versionNumber>1</versionNumber>
+	</tag>
+	<sourceType>
+		<id>BD0BC4E6C79FDEB2E04059106D1A5B6A</id>
+		<objectId>BD0BC4E6C79FDEB2E04059106D1A5B6A</objectId>
+		<createdOn>2014-07-14T02:37:08.992+01:00</createdOn>
+		<isCriticalSystemObject>true</isCriticalSystemObject>
+		<description>This design was created and is managed by HP CSA.</description>
+		<iconUrl>/csa/images/categories/sourcetype/internal.png</iconUrl>
+		<name>INTERNAL</name>
+		<displayName>HP CSA</displayName>
+		<disabled>false</disabled>
+		<categoryType>
+			<id>BD0BC4E6C79BDEB2E04059106D1A5B4E</id>
+			<objectId>BD0BC4E6C79BDEB2E04059106D1A5B4E</objectId>
+			<isCriticalSystemObject>false</isCriticalSystemObject>
+			<description>Source Type</description>
+			<name>SOURCE_TYPE</name>
+			<displayName>Source Type</displayName>
+			<extensible>true</extensible>
+		</categoryType>
+	</sourceType>
+	<serviceDesignerExperienceType>
+		<id>90cec76e3fd3cff2013fd3d066e706bd</id>
+		<objectId>90cec76e3fd3cff2013fd3d066e706bd</objectId>
+		<createdOn>2014-07-14T02:37:09.149+01:00</createdOn>
+		<isCriticalSystemObject>true</isCriticalSystemObject>
+		<description>Sequence based designer experience</description>
+		<name>SEQUENCE_BASED</name>
+		<displayName>Sequence Based</displayName>
+		<disabled>false</disabled>
+		<categoryType>
+			<id>90cec76e3fd3ce38013fd3cea5bf081a</id>
+			<objectId>90cec76e3fd3ce38013fd3cea5bf081a</objectId>
+			<isCriticalSystemObject>false</isCriticalSystemObject>
+			<description>Service Designer Experience Type</description>
+			<name>SERVICE_DESIGNER_EXPER_TYPE</name>
+			<displayName>Service Designer Experience Type</displayName>
+			<extensible>true</extensible>
+		</categoryType>
+	</serviceDesignerExperienceType>
+	<valid>false</valid>
+</ServiceBlueprint>
