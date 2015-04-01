@@ -129,7 +129,7 @@ csaUtils.getTask = function (xAuthToken , payload, url ,httpOptions, desc) {
   }
 }
 
-csaUtils.sendForm = function(username,password,url,xAuthToken){
+csaUtils.sendForm = function(username,password,url,xAuthToken, requestObject , desc){
   return function(){
     return new Promise(function(resolve, reject) {
 
@@ -141,7 +141,7 @@ csaUtils.sendForm = function(username,password,url,xAuthToken){
       };
 
       var formData = {
-        requestForm : '{  "categoryName": "ACCESSORY",  "subscriptionName": "Virtual Linux Server v01.00 (1.0.0)",  "startDate": "2015-03-30T10:47:42.000Z",  "fields": {    "field_2c9030e44c4645c1014c55f364b60d7b": true,    "field_2c9030e44c4645c1014c55f364b70d83": "1",    "field_2c9030e44c4645c1014c55f364b60d7f": "2",    "field_2c9030e44c4645c1014c55f364b60d70": true,    "field_2c9030e44c4645c1014c55f364b70d86": 4,    "field_2c9030e44c4645c1014c55f364b60d74": 1  },  "action": "ORDER"}'
+        requestForm : JSON.stringify(requestObject)
       };
 
       var options = {
@@ -155,11 +155,12 @@ csaUtils.sendForm = function(username,password,url,xAuthToken){
       request.post(options, function optionalCallback(err, httpResponse, body) {
         
         if (err) {
-          console.log('problem with request: ' + err.message);
-          reject(Error('problem with request: ' + err.message)); 
+          console.log('  failed to ' + desc + '-' + err.message);
+          reject(Error('failed to ' + desc + '-' + err.message)); 
         } else {
-          console.log(body);
-          resolve(body);
+          var subId = JSON.parse(body).id;
+          console.log('  success: ' + desc + ' - Request ID:' + subId )
+          resolve();
         }
         
       });
