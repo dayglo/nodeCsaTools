@@ -55,9 +55,9 @@ function getIdFromName(data , name){
 	return id;
 }
 
-function buildPropertyTasks(xAuthToken, componentId, properties ) {
+function buildPropertyTasks(xAuthToken, componentId, properties , httpOptions ) {
 	var tasks = properties.map(function(p){
-		return csaUtils.getTask(xAuthToken, csaUtils.getPropertyPayload(componentId, p.name, p.value , p.type ) , baseUrl + "csa/api/property" )
+		return csaUtils.getTask(xAuthToken, csaUtils.getPropertyPayload(componentId, p.name, p.value , p.type ) , baseUrl + "csa/api/property" ,  httpOptions , 'creating property ' + p.name)
 	});
 	return tasks;
 }
@@ -97,7 +97,7 @@ function createComponents(packageFile) {
 					var componentId = getIdFromName(csaPaletteData.members , componentName);
 					
 					// add some new task to the allTasks queue for each property
-					var newTasks = buildPropertyTasks(xAuthToken , componentId , component.properties);
+					var newTasks = buildPropertyTasks(xAuthToken , componentId , component.properties , httpOptions );
 					Array.prototype.push.apply(allTasks,newTasks);
 
 				}
@@ -269,7 +269,7 @@ function copyFolder(source, destination){
 }
 
 
-createComponents('./' + "csaPackage1-full.json");
-//createDesigns('./' + "csaPackage1-full.json");
+//createComponents('./' + "csaPackage1-full.json");
+createDesigns('./' + "csaPackage1-full.json");
 
 

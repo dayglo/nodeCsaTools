@@ -45,9 +45,6 @@ function buildRequestOptions(doc){
 
 }
 
-
-debugger;
-
 function createParallelTask(tasks,desc) {
 	return function(){
 		return new Promise(function(resolve,reject) {
@@ -60,7 +57,6 @@ function createParallelTask(tasks,desc) {
 
 			return Promise.all(executingTasks)
 			.then(function(data){
-				debugger;
 				console.log (desc + ' executed');
 				resolve('one of ' + desc + ' worked');
 			},function(err){
@@ -71,80 +67,56 @@ function createParallelTask(tasks,desc) {
 	}
 }
 
-//${TPCLOUD_CONSUMPTION_API_URL}/mpp/mpp-request/${tpcloudOfferingIdentifier}?catalogId=${tpcloudCatalogIdentifier}
+offeringId = '2c9030074c745ae6014c74c0ba370b76'; 
+catalogId = '2c9030e44b77dd62014b7de363b82048';
+categoryName = 'SOFTWARE'
 
-offeringId = '2c9030e44c4645c1014c55f364b60d6d'; 
-catalogId = '90d9650a36988e5d0136988f03ab000f';
 
 subscriptionRequestUrl = baseUrl + 'csa/api/mpp/mpp-request/' + offeringId + '?catalogId=' + catalogId;
-offeringUrl = baseUrl + 'csa/api/mpp/mpp-offering/' + offeringId + '?catalogId=' + catalogId + '&category=SOFTWARE';
-
-var myHttpOptions = httpOptions;
-myHttpOptions.headers = { 'Accept': 'application/json' };
+offeringUrl = baseUrl + 'csa/api/mpp/mpp-offering/' + offeringId + '?catalogId=' + catalogId + '&category=' + categoryName;
 
 
 csaUtils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions)
 .then(function(xAuthToken){
 
+	console.log( 'xauthtoken: \n\n' + xAuthToken + '\n');
+
+	var myHttpOptions = httpOptions;
+	myHttpOptions.headers = { 'Accept': 'application/json' };
 	myHttpOptions.headers['X-Auth-Token'] = xAuthToken;
 
 	return rest.get(offeringUrl , myHttpOptions)
 	.spread(function(data){
 
-		debugger;
+		var allParallelTasks = new Array();
+		var chunks = 600;
+		var tasksPerChunk = 50;
 
-		// var subRequestOptions = myHttpOptions;
-		// subRequestOptions.headers['Content-Type'] = 'multipart/form-data; boundary=ftbydrydrtybtyd';
-		// subRequestOptions.headers['X-Auth-Token'] = xAuthToken;
+		for (var i = 0 ; i < chunks ; i++) {
+			var tasks = new Array();
+			for (var j = 0 ; j < tasksPerChunk ; j++) {
 
-		// var suboptions = JSON.stringify(buildRequestOptions(data));
-		// var suboptionsStripped = suboptions.substr(1,suboptions.length - 2); // urgh
-		// var payload = ""+
-		// 	'--ftbydrydrtybtyd\n'+
-		// 	'Content-Disposition: form-data; name="requestForm"\n'+
-		// 	'\n'+
-		// 	'{\n'+
-		// 	'  "categoryName": "ACCESSORY",\n'+
-		// 	'  "subscriptionName": "test bulk",\n'+
-		// 	'  "startDate": "'+  moment().format() +'",\n'+
-		// 	suboptionsStripped + ',\n'+
-		// 	'  "action": "ORDER"\n'+
-		// 	'}\n'+
-		// 	'\n'+
-		// 	'--ftbydrydrtybtyd--\n'
+				var subRequestDetails = {
+					categoryName: categoryName,
+					subscriptionName: "test bulk: " + i + '.' + j,
+					startDate:  moment().format('YYYY-MM-DDTHH:mm:ss') + '.000Z',
+					fields: buildRequestOptions(data).fields,
+					action: "ORDER"
 
-			//payload = '{  "categoryName": "ACCESSORY",  "subscriptionName": "Virtual Linux Server v01.00 (1.0.0)",  "startDate": "2015-03-30T10:47:42.000Z",  "fields": {    "field_2c9030e44c4645c1014c55f364b60d7b": true,    "field_2c9030e44c4645c1014c55f364b70d83": "1",    "field_2c9030e44c4645c1014c55f364b60d7f": "2",    "field_2c9030e44c4645c1014c55f364b60d70": true,    "field_2c9030e44c4645c1014c55f364b70d86": 4,    "field_2c9030e44c4645c1014c55f364b60d74": 1  },  "action": "ORDER"}';
-		
+				}
+				tasks.push(csaUtils.sendForm(creds.u,creds.pw,subscriptionRequestUrl,xAuthToken , subRequestDetails  , " creating sub " + i + '.' + j));
+			}
+			allParallelTasks.push( createParallelTask(tasks , "a chunk of " + tasksPerChunk + " parallel tasks") )
+		}
 
-		subCreateTask = csaUtils.sendForm(creds.u,creds.pw,subscriptionRequestUrl,xAuthToken);
-
-		subCreateTask();
-
-
-		// debugger;
-
-		// var allParallelTasks = new Array();
-		// var chunks = 2;
-		// var tasksPerChunk = 5;
-
-		// for (var i = 0 ; i < chunks ; i++) {
-		// 	var tasks = new Array();
-		// 	for (var j = 0 ; j < tasksPerChunk ; j++) {
-		// 		tasks.push(csaUtils.getTask(xAuthToken, payload , subscriptionRequestUrl , subRequestOptions , " creating sub " + i + '.' + j));
-		// 	}
-		// 	allParallelTasks.push( createParallelTask(tasks , "some parallel tasks") )
-		// }
-
-		//  //kick off the promise tree! 
-		// return allParallelTasks.reduce(Q.when, Q('a')).done();
+		 //kick off the promise tree! 
+		return allParallelTasks.reduce(Q.when, Q('a')).done();
 
 
 	},function(err){
 		console.log("error in main " + err)
-		debugger;
 	}).then(function(data){
-		onsole.log("final " + data)
-		debugger;
+		console.log("done.")
 	})
 
 },function(err){
