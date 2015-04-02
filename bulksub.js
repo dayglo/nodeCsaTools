@@ -2,6 +2,7 @@ creds = require('./creds');
 csaUtils = require('./csaUtils');
 uploadFile = require('./uploadFile');
 Q = require('q');
+chalk = require('chalk');
 
 var argv = require('minimist')(process.argv.slice(2));
 offeringId  = argv._[0];
@@ -75,7 +76,8 @@ function bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk)
 			debugger;
 	})
 }
-//'2c9030074c745ae6014c74c0ba370b76' , '2c9030e44b77dd62014b7de363b82048' , 'SOFTWARE' , 1 , 1 
+// example: 
+// node bulksub.js 2c9030074c745ae6014c74c0ba370b76 2c9030e44b77dd62014b7de363b82048  SOFTWARE  1  1 
 
 bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk);
 

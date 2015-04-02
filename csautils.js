@@ -6,6 +6,7 @@ rest = require('restler-q').spread;
 var S = require('string');
 var request = require('request');
 var moment = require('moment');
+chalk = require('chalk');
 
 csaUtils = {}
  
@@ -171,18 +172,20 @@ function buildRequestOptions(doc){
 
 function pollRequest(username, password, baseUrl, xAuthToken , retry) {  
 	return function(reqData){
-		if(!retry) retry = 5;
-		if(!retry--) throw new Error('Too many retries');
+		return new Promise(function(resolve,reject){
 
-		return Promise.resolve(reqData)
-		.then(getRequestStatus(username, password, baseUrl, xAuthToken ))
-		.then(function(requestData) {
-			debugger
-			if(requestData.requestState === 'REJECTED') throw new Error("the request " + reqData.reqId + " was rejected by CSA");
-			if(requestData.requestState === 'COMPLETED') return requestData;
+			if(!retry) retry = 5;
+			if(!retry--) reject("timed out while polling request status for request " + reqData.reqId);
 
-			return Promise.delay(reqData, getRandomInt(5000,20000) ).then(pollRequest(username, password, baseUrl, xAuthToken , retry));
-		});
+			return Promise.resolve(reqData)
+			.then(getRequestStatus(username, password, baseUrl, xAuthToken ))
+			.then(function(requestData) {
+				debugger
+				if(requestData.requestState === 'REJECTED') reject("the request " + reqData.reqId + " was rejected by CSA");
+				else if(requestData.requestState === 'COMPLETED') resolve(requestData);
+				else return Promise.delay(reqData, getRandomInt(5000,20000) ).then(pollRequest(username, password, baseUrl, xAuthToken , retry));
+			});
+		})
 	}
 }
 
@@ -222,6 +225,7 @@ function getRequestStatus(username, password, baseUrl, xAuthToken ) {
 function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject , desc , catalogId){
 	return function(){
 		return new Promise(function(resolve, reject) {
+			console.log(desc);
 
 			var authString = 'Basic ' + new Buffer(username + ':' + password).toString('base64');
 
@@ -244,11 +248,12 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 
 			request.post(options, function optionalCallback(err, httpResponse, body) {
 				if (err) {
-					console.log('  failed to ' + desc + '-' + err.message);
-					reject(Error('failed to ' + desc + '-' + err.message)); 
+					var errorString = '  request' + chalk.red(' not accepted ') + desc + '-' + err.message;
+					console.log(errorString);
+					reject(Error(errorString)); 
 				} else {
 					var reqId = JSON.parse(body).id;
-					console.log('  success: ' + desc + ' - Request ID:' + reqId )
+					console.log('  request ' +chalk.green('accepted') +': ' + desc + ' - Request ID:' + reqId )
 					resolve({reqId:reqId , catalogId:catalogId} );
 				}
 			});
@@ -260,7 +265,7 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 csaUtils.requestSubscription = function (username, password, baseUrl , offeringId , catalogId, categoryName, offeringData , subName , xAuthToken ) {
 	return function(){
 
-		var desc = " creating sub :" + subName;
+		var desc = " creating sub: " + subName;
 		var subscriptionRequestUrl = baseUrl + 'csa/api/mpp/mpp-request/' + offeringId + '?catalogId=' + catalogId;
 		var subRequestDetails = {
 			categoryName: categoryName,
@@ -273,7 +278,10 @@ csaUtils.requestSubscription = function (username, password, baseUrl , offeringI
 		return sendSubscriptionRequest(username, password, subscriptionRequestUrl, xAuthToken, subRequestDetails , desc , catalogId)()
 		.then(pollRequest(username, password, baseUrl, xAuthToken , 5))
 		.then(function(requestData){
-			console.log("  request " + requestData.id +" (subscription " + requestData.subscription.displayName + ') was successfully fulfilled');
+			console.log("      request " + requestData.id +" (subscription " + requestData.subscription.displayName + ') was '+ chalk.green(' successfully fulfilled'));
+		},function(err){
+			debugger;
+			console.log("      request for subscription " + subName + chalk.red(' failed') + ': ' + err);
 		});
 	}
 }
