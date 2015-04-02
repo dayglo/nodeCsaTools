@@ -178,7 +178,7 @@ function pollRequest(username, password, baseUrl, xAuthToken , retry) {
 		.then(getRequestStatus(username, password, baseUrl, xAuthToken ))
 		.then(function(requestData) {
 			debugger
-			if(requestData.requestState === 'REJECTED') throw new Error("the request "+ reqData.reqId +" was rejected by CSA");
+			if(requestData.requestState === 'REJECTED') throw new Error("the request " + reqData.reqId + " was rejected by CSA");
 			if(requestData.requestState === 'COMPLETED') return requestData;
 
 			return Promise.delay(reqData, getRandomInt(5000,20000) ).then(pollRequest(username, password, baseUrl, xAuthToken , retry));

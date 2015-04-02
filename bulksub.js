@@ -1,17 +1,15 @@
-require('es6-promise').polyfill();
-rest = require('restler-q').spread;
 creds = require('./creds');
 csaUtils = require('./csaUtils');
 uploadFile = require('./uploadFile');
 Q = require('q');
-chalk = require('chalk');
-var glob = require("glob");
-var fs = require('fs');
 
-var ncp = require('ncp').ncp;
-var moment = require('moment');
+var argv = require('minimist')(process.argv.slice(2));
+offeringId  = argv._[0];
+catalogId  = argv._[1];
+categoryName  = argv._[2];
+chunks  = argv._[3];
+tasksPerChunk = argv._[4];
 
-console = require('better-console');
 
 var baseUrl = creds.baseUrl; // this format "https://vm01:8444/"
 
@@ -36,7 +34,7 @@ IdmCallOptions = {
 
 
 
-function bulksub(offeringId , catalogId , categoryName) {
+function bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk) {
 
 	offeringUrl = baseUrl + 'csa/api/mpp/mpp-offering/' + offeringId + '?catalogId=' + catalogId + '&category=' + categoryName;
 
@@ -53,20 +51,18 @@ function bulksub(offeringId , catalogId , categoryName) {
 		.spread(function(offeringData){
 
 			var allParallelTasks = new Array();
-			var chunks = 2
-			var tasksPerChunk = 5;
 
 			for (var i = 0 ; i < chunks ; i++) {
+				//build an array of subscription request tasks.
 				var tasks = new Array();
 				for (var j = 0 ; j < tasksPerChunk ; j++) {
-
 					tasks.push(csaUtils.requestSubscription(creds.u, creds.pw, baseUrl ,offeringId , catalogId, categoryName, offeringData ,  "bulk test " + i + '.' + j , xAuthToken ));
-					//tasks.push(csaUtils.sendForm(creds.u,creds.pw,subscriptionRequestUrl,xAuthToken ));
 				}
+				// create a new ubertask, which executes this chunk of tasks simultaneously.
 				allParallelTasks.push( csaUtils.createParallelTask(tasks , "a chunk of " + tasksPerChunk + " parallel tasks") )
 			}
 
-			 //kick off the promise tree! 
+			 //promise magic to invoke all the ubertasks sequentially
 			return allParallelTasks.reduce(Q.when, Q('a')).done();
 
 		},function(err){
@@ -79,9 +75,9 @@ function bulksub(offeringId , catalogId , categoryName) {
 			debugger;
 	})
 }
+//'2c9030074c745ae6014c74c0ba370b76' , '2c9030e44b77dd62014b7de363b82048' , 'SOFTWARE' , 1 , 1 
 
-
-bulksub( '2c9030074c745ae6014c74c0ba370b76' , '2c9030e44b77dd62014b7de363b82048' , 'SOFTWARE' );
+bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk);
 
 
 
