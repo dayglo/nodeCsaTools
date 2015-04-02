@@ -35,90 +35,56 @@ IdmCallOptions = {
 	password: creds.idmPw
 }
 
-function buildRequestOptions(doc){
-	
-	var list = [];
-   	return doc.fields.reduce(function(prev,curr){
-        prev.fields[curr.id] = curr.value;
-        return prev
-   	},{fields:{}})
-
-}
-
-function createParallelTask(tasks,desc) {
-	return function(){
-		return new Promise(function(resolve,reject) {
-
-			console.log('executing ' + desc);
-
-			var executingTasks = tasks.map(function(task) {
-				return task();
-			})
-
-			return Promise.all(executingTasks)
-			.then(function(data){
-				console.log (desc + ' executed');
-				resolve('one of ' + desc + ' worked');
-			},function(err){
-				console.log (desc + ' did not work '+ err);
-				reject(desc + ' - ' + err);
-			})
-		});
-	}
-}
-
-offeringId = '2c9030074c745ae6014c74c0ba370b76'; 
-catalogId = '2c9030e44b77dd62014b7de363b82048';
-categoryName = 'SOFTWARE'
 
 
-subscriptionRequestUrl = baseUrl + 'csa/api/mpp/mpp-request/' + offeringId + '?catalogId=' + catalogId;
-offeringUrl = baseUrl + 'csa/api/mpp/mpp-offering/' + offeringId + '?catalogId=' + catalogId + '&category=' + categoryName;
+function bulksub(offeringId , catalogId , categoryName) {
 
+	offeringUrl = baseUrl + 'csa/api/mpp/mpp-offering/' + offeringId + '?catalogId=' + catalogId + '&category=' + categoryName;
 
-csaUtils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions)
-.then(function(xAuthToken){
+	csaUtils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions)
+	.then(function(xAuthToken){
 
-	console.log( 'xauthtoken: \n\n' + xAuthToken + '\n');
+		console.log( 'xauthtoken: \n\n' + xAuthToken + '\n');
 
-	var myHttpOptions = httpOptions;
-	myHttpOptions.headers = { 'Accept': 'application/json' };
-	myHttpOptions.headers['X-Auth-Token'] = xAuthToken;
+		var myHttpOptions = httpOptions;
+		myHttpOptions.headers = { 'Accept': 'application/json' };
+		myHttpOptions.headers['X-Auth-Token'] = xAuthToken;
 
-	return rest.get(offeringUrl , myHttpOptions)
-	.spread(function(data){
+		return rest.get(offeringUrl , myHttpOptions)
+		.spread(function(offeringData){
 
-		var allParallelTasks = new Array();
-		var chunks = 600;
-		var tasksPerChunk = 50;
+			var allParallelTasks = new Array();
+			var chunks = 2
+			var tasksPerChunk = 5;
 
-		for (var i = 0 ; i < chunks ; i++) {
-			var tasks = new Array();
-			for (var j = 0 ; j < tasksPerChunk ; j++) {
+			for (var i = 0 ; i < chunks ; i++) {
+				var tasks = new Array();
+				for (var j = 0 ; j < tasksPerChunk ; j++) {
 
-				var subRequestDetails = {
-					categoryName: categoryName,
-					subscriptionName: "test bulk: " + i + '.' + j,
-					startDate:  moment().format('YYYY-MM-DDTHH:mm:ss') + '.000Z',
-					fields: buildRequestOptions(data).fields,
-					action: "ORDER"
-
+					tasks.push(csaUtils.requestSubscription(creds.u, creds.pw, baseUrl ,offeringId , catalogId, categoryName, offeringData ,  "bulk test " + i + '.' + j , xAuthToken ));
+					//tasks.push(csaUtils.sendForm(creds.u,creds.pw,subscriptionRequestUrl,xAuthToken ));
 				}
-				tasks.push(csaUtils.sendForm(creds.u,creds.pw,subscriptionRequestUrl,xAuthToken , subRequestDetails  , " creating sub " + i + '.' + j));
+				allParallelTasks.push( csaUtils.createParallelTask(tasks , "a chunk of " + tasksPerChunk + " parallel tasks") )
 			}
-			allParallelTasks.push( createParallelTask(tasks , "a chunk of " + tasksPerChunk + " parallel tasks") )
-		}
 
-		 //kick off the promise tree! 
-		return allParallelTasks.reduce(Q.when, Q('a')).done();
+			 //kick off the promise tree! 
+			return allParallelTasks.reduce(Q.when, Q('a')).done();
 
+		},function(err){
+			console.log("error in main " + err)
+		}).then(function(data){
+			console.log("done.")
+		})
 
 	},function(err){
-		console.log("error in main " + err)
-	}).then(function(data){
-		console.log("done.")
+			debugger;
 	})
+}
 
-},function(err){
-		debugger;
-})
+
+bulksub( '2c9030074c745ae6014c74c0ba370b76' , '2c9030e44b77dd62014b7de363b82048' , 'SOFTWARE' );
+
+
+
+
+
