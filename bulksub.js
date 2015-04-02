@@ -13,9 +13,8 @@ var moment = require('moment');
 
 console = require('better-console');
 
-//q = require ('q');
-//var authString = enc(u + ":" + pw);
-var baseUrl = "https://vm01:8444/";
+var baseUrl = creds.baseUrl; // this format "https://vm01:8444/"
+
 var credentialData = {
 	"passwordCredentials" :
 	{
