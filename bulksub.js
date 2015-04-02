@@ -69,7 +69,7 @@ function bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk)
 		},function(err){
 			console.log("error in main " + err)
 		}).then(function(data){
-			console.log("done.")
+			console.log("Finished setting up work. Starting execution...")
 		})
 
 	},function(err){

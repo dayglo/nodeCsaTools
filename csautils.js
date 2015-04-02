@@ -170,21 +170,63 @@ function buildRequestOptions(doc){
 
 }
 
+
 function pollRequest(username, password, baseUrl, xAuthToken , retry) {  
 	return function(reqData){
+			//console.log(retry);
+			retry--;
+			if(retry === 0) {
+				console.log('           timed out request ' + reqData.reqId);
+				return Promise.reject("timed out while polling request status for request " + reqData.reqId);
+			} else {
+				return Promise.resolve(reqData)
+				.then(getRequestStatus(username, password, baseUrl, xAuthToken ))
+				.then(function(requestData) {
+
+					if(requestData.requestState === 'REJECTED') {
+						//console.log('request rejected');
+						return Promise.reject("the request " + reqData.reqId + " was rejected by CSA")
+					} else if(requestData.requestState === 'COMPLETED') {
+						//console.log('request complete ' );
+						debugger;
+						return Promise.resolve(requestData);
+					} else {
+						//console.log('retrigger delay');
+						return Promise.delay(reqData, getRandomInt(9000,11000) ).then(pollRequest(username, password, baseUrl, xAuthToken , retry));
+					}
+				});
+			}
+	}
+}
+
+
+
+function pollRequestold(username, password, baseUrl, xAuthToken , retry) {  
+	return function(reqData){
 		return new Promise(function(resolve,reject){
+			//console.log(retry);
+			retry--;
+			if(retry === 0) {
+				console.log('           timed out request ' + reqData.reqId);
+				reject("timed out while polling request status for request " + reqData.reqId);
+			} else {
+				return Promise.resolve(reqData)
+				.then(getRequestStatus(username, password, baseUrl, xAuthToken ))
+				.then(function(requestData) {
 
-			if(!retry) retry = 5;
-			if(!retry--) reject("timed out while polling request status for request " + reqData.reqId);
-
-			return Promise.resolve(reqData)
-			.then(getRequestStatus(username, password, baseUrl, xAuthToken ))
-			.then(function(requestData) {
-				debugger
-				if(requestData.requestState === 'REJECTED') reject("the request " + reqData.reqId + " was rejected by CSA");
-				else if(requestData.requestState === 'COMPLETED') resolve(requestData);
-				else return Promise.delay(reqData, getRandomInt(5000,20000) ).then(pollRequest(username, password, baseUrl, xAuthToken , retry));
-			});
+					if(requestData.requestState === 'REJECTED') {
+						console.log('request rejected');
+						reject("the request " + reqData.reqId + " was rejected by CSA")
+					} else if(requestData.requestState === 'COMPLETED') {
+						console.log('request complete ' );
+						debugger;
+						resolve(requestData);
+					} else {
+						console.log('retrigger delay');
+						return Promise.delay(reqData, getRandomInt(9000,11000) ).then(pollRequest(username, password, baseUrl, xAuthToken , retry));
+					}
+				});
+			}
 		})
 	}
 }
@@ -211,10 +253,11 @@ function getRequestStatus(username, password, baseUrl, xAuthToken ) {
 
 				request.get(options, function optionalCallback(err, httpResponse, body) {
 					if (err) {
-						console.log('       failure while ' + err.message);
-						reject(Error('       failure while ' + err.message)); 
+						console.log(' failure while ' + err.message);
+						reject(Error(' failure while ' + err.message)); 
 					} else {
-						resolve(JSON.parse(body));
+						bodyData = JSON.parse(body)
+						resolve(bodyData);
 					}
 			});
 		})
@@ -276,8 +319,9 @@ csaUtils.requestSubscription = function (username, password, baseUrl , offeringI
 		}
 
 		return sendSubscriptionRequest(username, password, subscriptionRequestUrl, xAuthToken, subRequestDetails , desc , catalogId)()
-		.then(pollRequest(username, password, baseUrl, xAuthToken , 5))
+		.then(pollRequest(username, password, baseUrl, xAuthToken , 20))
 		.then(function(requestData){
+			
 			console.log("      request " + requestData.id +" (subscription " + requestData.subscription.displayName + ') was '+ chalk.green(' successfully fulfilled'));
 		},function(err){
 			debugger;
