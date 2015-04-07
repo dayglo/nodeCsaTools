@@ -33,6 +33,7 @@ IdmCallOptions = {
 	password: creds.idmPw
 }
 
+// need to add the code which substitutes the sub options.
 
 function modifySub(subId , catalogId , categoryName) {
 
@@ -50,12 +51,12 @@ function modifySub(subId , catalogId , categoryName) {
 		return rest.get(subscriptionUrl , myHttpOptions)
 		.spread(function(subData){
 
-			return csaUtils.submitRequest(creds.u, creds.pw, "MODIFY_SUBSCRIPTION" , baseUrl ,subId , catalogId, categoryName, subData ,  "test modify beatch" , xAuthToken )();
+			return csaUtils.submitRequest(creds.u, creds.pw, "MODIFY_SUBSCRIPTION" , baseUrl ,subId , catalogId, categoryName, subData , subData.name , xAuthToken )();
 
 		},function(err){
 			console.log("error in main " + err)
 		}).then(function(data){
-			console.log("Finished setting up work. Starting execution...")
+			console.log("Finished.")
 		})
 
 	},function(err){

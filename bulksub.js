@@ -57,7 +57,7 @@ function bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk)
 				//build an array of subscription request tasks.
 				var tasks = new Array();
 				for (var j = 0 ; j < tasksPerChunk ; j++) {
-					tasks.push(csaUtils.requestSubscription(creds.u, creds.pw, baseUrl ,offeringId , catalogId, categoryName, offeringData ,  "bulk test " + i + '.' + j , xAuthToken ));
+					tasks.push(csaUtils.submitRequest(creds.u, creds.pw, "ORDER" , baseUrl ,offeringId , catalogId, categoryName, offeringData ,  "bulk test " + i + '.' + j , xAuthToken ));
 				}
 				// create a new ubertask, which executes this chunk of tasks simultaneously.
 				allParallelTasks.push( csaUtils.createParallelTask(tasks , "a chunk of " + tasksPerChunk + " parallel tasks") )
