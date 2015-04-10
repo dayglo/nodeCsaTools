@@ -1,6 +1,5 @@
 creds = require('./creds');
 csaUtils = require('./csaUtils');
-uploadFile = require('./uploadFile');
 Q = require('q');
 chalk = require('chalk');
 
@@ -57,7 +56,12 @@ function bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk)
 				//build an array of subscription request tasks.
 				var tasks = new Array();
 				for (var j = 0 ; j < tasksPerChunk ; j++) {
-					tasks.push(csaUtils.submitRequest(creds.u, creds.pw, "ORDER" , baseUrl ,offeringId , catalogId, categoryName, offeringData ,  "bulk test " + i + '.' + j , xAuthToken ));
+					var newInputData = {
+						"VCPU": 5,
+						"MEMORY" : 1
+					}
+
+					tasks.push(csaUtils.submitRequest(creds.u, creds.pw, "ORDER" , baseUrl ,offeringId , catalogId, categoryName, offeringData , newInputData ,  "bulk test " + i + '.' + j , xAuthToken ));
 				}
 				// create a new ubertask, which executes this chunk of tasks simultaneously.
 				allParallelTasks.push( csaUtils.createParallelTask(tasks , "a chunk of " + tasksPerChunk + " parallel tasks") )

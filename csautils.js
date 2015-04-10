@@ -161,12 +161,15 @@ debugger;
 }
 
 
-function buildRequestOptions(doc){
+function buildRequestOptions(doc , newInputData){
 	
-	var list = [];
 		return doc.fields.reduce(function(prev,curr){
+			if (typeof newInputData[curr.name] !== "undefined") {
+				prev.fields[curr.id] = newInputData[curr.name]
+			} else {
 				prev.fields[curr.id] = curr.value;
-				return prev
+			}
+			return prev;
 		},{fields:{}})
 }
 
@@ -271,18 +274,23 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 	}
 }
 
-csaUtils.submitRequest = function (username, password, action , baseUrl , offeringId , catalogId, categoryName, offeringData , subName , xAuthToken ) {
+
+
+csaUtils.submitRequest = function (username, password, action , baseUrl , offeringId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
 	return function(){
 //try a promise here?
 
 	
 		var desc = ["submitting" , action , "request for sub: " , subName].join(' ');
 		var subscriptionRequestUrl = baseUrl + 'csa/api/mpp/mpp-request/' + offeringId + '?catalogId=' + catalogId;
+		debugger;
+		var subOptions = buildRequestOptions(offeringData , newInputData ).fields  
+
 		var subRequestDetails = {
 			categoryName: categoryName,
 			subscriptionName: subName,
 			startDate:  moment().format('YYYY-MM-DDTHH:mm:ss') + '.000Z',
-			fields: buildRequestOptions(offeringData).fields,
+			fields: subOptions ,
 			action: action
 		}
 		debugger;
