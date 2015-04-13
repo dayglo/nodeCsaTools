@@ -59,6 +59,7 @@ function bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk)
 					var newInputData = {
 						"VCPU": 5,
 						"MEMORY" : 1
+						"MEMORY" : 4
 					}
 					tasks.push(csaUtils.submitRequest(creds.u, creds.pw, "ORDER" , baseUrl ,offeringId , catalogId, categoryName, offeringData , newInputData ,  "bulk test " + i + '.' + j , xAuthToken ));
 				}
