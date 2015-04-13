@@ -60,25 +60,24 @@ function bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk)
 						"VCPU": 5,
 						"MEMORY" : 1
 					}
-
 					tasks.push(csaUtils.submitRequest(creds.u, creds.pw, "ORDER" , baseUrl ,offeringId , catalogId, categoryName, offeringData , newInputData ,  "bulk test " + i + '.' + j , xAuthToken ));
 				}
 				// create a new ubertask, which executes this chunk of tasks simultaneously.
 				allParallelTasks.push( csaUtils.createParallelTask(tasks , "a chunk of " + tasksPerChunk + " parallel tasks") )
 			}
-
-			 //promise magic to invoke all the ubertasks sequentially
-			return allParallelTasks.reduce(Q.when, Q('a')).done();
-
-		},function(err){
-			console.log("error in main " + err)
-		}).then(function(data){
-			console.log("Finished setting up work. Starting execution...")
+			//promise magic to invoke all the ubertasks sequentially
+			return allParallelTasks.reduce(Q.when, Q('a'))
 		})
 
 	},function(err){
-			debugger;
+		console.log('login failed.')
+
 	})
+	.then(function(data){
+		console.log("done!\n\n" + data)
+
+		debugger;
+	});;
 }
 // example: 
 // node bulksub.js 2c9030074c745ae6014c74c0ba370b76 2c9030e44b77dd62014b7de363b82048  SOFTWARE  1  1 
