@@ -13,6 +13,7 @@
     "express": "4.11.2",
     "glob": "5.0.1",
     "gulp": "3.8.10",
+    "lodash": "^3.6.0",
     "minimist": "1.1.1",
     "moment": "2.9.0",
     "ncp": "2.0.0",
@@ -23,9 +24,9 @@
     "restler-q": "0.1.1",
     "sequelize": "2.0.0-rc4",
     "string": "3.1.1",
-    "xpath": "0.0.9",
-    "xmldom": "0.1.19"
-    },
+    "xmldom": "0.1.19",
+    "xpath": "0.0.9"
+  },
   "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
