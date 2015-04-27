@@ -1,0 +1,20 @@
+var creds = {}
+
+creds.u = "engg_user1";
+creds.pw = "mypassword";
+creds.org = "CSAADMIN";
+creds.org = "ENGINEERING";
+creds.idmU = "idmTransportUser";
+creds.idmPw = "idmTransportUser";
+
+creds.inboundUser = "admin";
+creds.inboundPass = "mypassword";
+creds.legacyApiUser = "admin"
+
+creds.host = "vm01";
+creds.adminPort = "8444"
+
+
+creds.baseUrl = ["https://" , creds.host , ':' , creds.adminPort,'/'].join('');
+
+module.exports  = creds;
