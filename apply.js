@@ -153,17 +153,6 @@ function writeFile(filePath){
 }
 
 
-function editXmlElementText(xml,xmlPath,newElementName,value){
-	//TODO: Shouldnt need newElementName, should be able to just replace the text node. 
-	// ah who am i kidding this will never be fixed.
-
-	var doc = new dom().parseFromString(xml);
-	var newIdElement = doc.createElement(newElementName).appendChild(doc.createTextNode(value));
-	oldid = xpath.select(xmlPath, doc , true);
-	oldid.replaceChild(newIdElement.parentNode,oldid);
-	return oldid.ownerDocument.toString();
-
-}
 
 function editXmlFile(newDesignName , designUuid) {
 	return function(data) {
@@ -186,7 +175,7 @@ function editXmlFile(newDesignName , designUuid) {
 				var editedDoc = Object.keys(substitutions).reduce(function(prev,curr,index,raw){
 
 					elementName = curr.substring(curr.lastIndexOf("/")+1);
-					return editXmlElementText(prev,curr,elementName,substitutions[curr]) ;
+					return csaUtils.editXmlElementText(prev,curr,elementName,substitutions[curr]) ;
 				},data);
 
 				resolve(editedDoc);

@@ -8,6 +8,14 @@ var request = require('request');
 var moment = require('moment');
 chalk = require('chalk');
 
+
+
+var xpath = require('xpath'),
+    dom   = require('xmldom').DOMParser,
+    XMLSerializer = require('xmldom').XMLSerializer;
+
+
+
 csaUtils = {}
  
 function getRandomInt(min, max) {
@@ -100,6 +108,42 @@ csaUtils.loginAndGetToken =  function (baseUrl , credentialData ,IdmCallOptions)
 	});  
 }
 
+csaUtils.getUserIdentifier = function (baseUrl , user , options) {
+	var url = [baseUrl ,'csa/rest/login/' , "CSA-Provider" ,  '/' , user].join('') ;
+	return csaUtils.queryAndExtract(url , '/person/id' , options)
+}
+
+csaUtils.queryAndExtract =  function (url , xpath , options) {
+	return function() {
+		return new Promise(function(resolve, reject) {
+			console.log(" getting url " + url);
+
+			var authString = 'Basic ' + new Buffer(options.username + ':' + options.password).toString('base64');
+
+			var requestOptions = {
+				rejectUnauthorized: false,
+				url: url,
+				headers: { "Authorization" : authString }
+			};
+
+			request.get(requestOptions, function optionalCallback(err, httpResponse, body) {
+				if (err)
+					reject(Error(' failure requesting document. ' + err.message)); 
+				else {
+					var result = "";
+					try {
+						result = csaUtils.xpathQuery(body,xpath)
+						resolve(result);
+					} catch (err){
+						reject(Error(' failure while querying xpath: ' + err.message)); 
+					}
+				}
+			});
+		});  
+	}
+}
+
+
 csaUtils.getTask = function (xAuthToken , payload, url ,httpOptions, desc) {
 	return function(){
 
@@ -149,9 +193,8 @@ csaUtils.createParallelTask = function(tasks,desc) {
 
 			return Promise.all(executingTasks)
 			.then(function(data){
-debugger;
-				console.log (desc + ' executed');
-				resolve('one of ' + desc + ' worked');
+				console.log (desc + ' executed');				
+				resolve(data);
 			},function(err){
 				console.log (desc + ' did not work '+ err);
 				reject(desc + ' - ' + err);
@@ -203,30 +246,30 @@ function pollRequest(username, password, baseUrl, xAuthToken , retry) {
 function getRequestStatus(username, password, baseUrl, xAuthToken ) {
 	return function(reqData){
 		return new Promise(function(resolve, reject) {
-				var desc = "    checking progress on request " + reqData.reqId;
-				console.log(desc);
+			var desc = "    checking progress on request " + reqData.reqId;
+			console.log(desc);
 
-				var authString = 'Basic ' + new Buffer(username + ':' + password).toString('base64');
+			var authString = 'Basic ' + new Buffer(username + ':' + password).toString('base64');
 
-				var headers = {
-					"Authorization" : authString,
-					"X-Auth-Token" : xAuthToken
-				};
+			var headers = {
+				"Authorization" : authString,
+				"X-Auth-Token" : xAuthToken
+			};
 
-				var options = {
-					rejectUnauthorized: false,
-					url: baseUrl + 'csa/api/mpp/mpp-request/' + reqData.reqId + '?catalogId=' + reqData.catalogId,
-					headers:headers
-				};
+			var options = {
+				rejectUnauthorized: false,
+				url: baseUrl + 'csa/api/mpp/mpp-request/' + reqData.reqId + '?catalogId=' + reqData.catalogId,
+				headers:headers
+			};
 
-				request.get(options, function optionalCallback(err, httpResponse, body) {
-					if (err) {
-						console.log(' failure while ' + err.message);
-						reject(Error(' failure while ' + err.message)); 
-					} else {
-						bodyData = JSON.parse(body)
-						resolve(bodyData);
-					}
+			request.get(options, function optionalCallback(err, httpResponse, body) {
+				if (err) {
+					console.log(' failure while ' + err.message);
+					reject(Error(' failure while ' + err.message)); 
+				} else {
+					bodyData = JSON.parse(body)
+					resolve(bodyData);
+				}
 			});
 		})
 	}
@@ -262,8 +305,7 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 					var errorString = '  request' + chalk.red(' not accepted ') + desc + '-' + err.message;
 					console.log(errorString);
 					reject(Error(errorString)); 
-				} else {
-					debugger;
+				} else {					
 					var reqId = JSON.parse(body).id;
 					console.log('  request ' +chalk.green('accepted') +': ' + desc + ' - Request ID:' + reqId )
 					resolve({reqId:reqId , catalogId:catalogId} );
@@ -282,8 +324,7 @@ csaUtils.submitRequest = function (username, password, action , baseUrl , offeri
 
 	
 		var desc = ["submitting" , action , "request for sub: " , subName].join(' ');
-		var subscriptionRequestUrl = baseUrl + 'csa/api/mpp/mpp-request/' + offeringId + '?catalogId=' + catalogId;
-		debugger;
+		var subscriptionRequestUrl = baseUrl + 'csa/api/mpp/mpp-request/' + offeringId + '?catalogId=' + catalogId;		
 		var subOptions = buildRequestOptions(offeringData , newInputData ).fields  
 
 		var subRequestDetails = {
@@ -292,8 +333,7 @@ csaUtils.submitRequest = function (username, password, action , baseUrl , offeri
 			startDate:  moment().format('YYYY-MM-DDTHH:mm:ss') + '.000Z',
 			fields: subOptions ,
 			action: action
-		}
-		debugger;
+		}		
 		var chain = sendSubscriptionRequest(username, password, subscriptionRequestUrl, xAuthToken, subRequestDetails , desc , catalogId)()
 		.then(pollRequest(username, password, baseUrl, xAuthToken , 20))
 		.then(function(requestData){
@@ -306,6 +346,25 @@ csaUtils.submitRequest = function (username, password, action , baseUrl , offeri
 		return chain;
 	}
 }
+
+csaUtils.editXmlElementText = function(xml,xmlPath,newElementName,value){
+	//TODO: Shouldnt need newElementName, should be able to just replace the text node. 
+	// ah who am i kidding this will never be fixed.
+
+	var doc = new dom().parseFromString(xml);
+	var newIdElement = doc.createElement(newElementName).appendChild(doc.createTextNode(value));
+	oldid = xpath.select(xmlPath, doc , true);
+	oldid.replaceChild(newIdElement.parentNode,oldid);
+	return oldid.ownerDocument.toString();
+
+}
+
+csaUtils.xpathQuery = function (xml,xPath){
+	var doc = new dom().parseFromString(xml);
+	var selected =  xpath.select(xPath, doc , true);
+	return selected.childNodes[0].data;
+}
+
 
 
  
