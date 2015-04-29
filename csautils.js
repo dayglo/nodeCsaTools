@@ -8,6 +8,8 @@ var request = require('request');
 var moment = require('moment');
 chalk = require('chalk');
 
+_ = require('lodash');
+
 
 
 var xpath = require('xpath'),
@@ -114,6 +116,7 @@ csaUtils.getUserIdentifier = function (baseUrl , user , options) {
 }
 
 csaUtils.queryAndExtract =  function (url , xpath , options) {
+	//for use with legacy api
 	return function() {
 		return new Promise(function(resolve, reject) {
 			console.log(" getting url " + url);
@@ -218,28 +221,22 @@ function buildRequestOptions(doc , newInputData){
 
 function pollRequest(username, password, baseUrl, xAuthToken , retry) {  
 	return function(reqData){
-			//console.log(retry);
-			retry--;
-			if(retry === 0) {
-				console.log('           timed out request ' + reqData.reqId);
-				return Promise.reject("timed out while polling request status for request " + reqData.reqId);
-			} else {
-				return Promise.resolve(reqData)
-				.then(getRequestStatus(username, password, baseUrl, xAuthToken ))
-				.then(function(requestData) {
-
-					if(requestData.requestState === 'REJECTED') {
-						//console.log('request rejected');
-						return Promise.reject("the request " + reqData.reqId + " was rejected by CSA")
-					} else if(requestData.requestState === 'COMPLETED') {
-						//console.log('request complete ' );
-						return Promise.resolve(requestData);
-					} else {
-						//console.log('retrigger delay');
-						return Promise.delay(reqData, getRandomInt(9000,11000) ).then(pollRequest(username, password, baseUrl, xAuthToken , retry));
-					}
-				});
-			}
+		retry--;
+		if(retry === 0) {
+			//console.log('           timed out request ' + reqData.reqId);
+			return Promise.reject("timed out while polling request status for request " + reqData.reqId);
+		} else {
+			return Promise.resolve(reqData)
+			.then(getRequestStatus(username, password, baseUrl, xAuthToken ))
+			.then(function(requestData) {
+				if(requestData.requestState === 'REJECTED')
+					return Promise.reject("the request " + reqData.reqId + " was rejected by CSA")
+				else if(requestData.requestState === 'COMPLETED')
+					return Promise.resolve(requestData);
+				else
+					return Promise.delay(reqData, getRandomInt(9000,11000) ).then(pollRequest(username, password, baseUrl, xAuthToken , retry));
+			});
+		}
 	}
 }
 
@@ -249,17 +246,10 @@ function getRequestStatus(username, password, baseUrl, xAuthToken ) {
 			var desc = "    checking progress on request " + reqData.reqId;
 			console.log(desc);
 
-			var authString = 'Basic ' + new Buffer(username + ':' + password).toString('base64');
-
-			var headers = {
-				"Authorization" : authString,
-				"X-Auth-Token" : xAuthToken
-			};
-
 			var options = {
 				rejectUnauthorized: false,
 				url: baseUrl + 'csa/api/mpp/mpp-request/' + reqData.reqId + '?catalogId=' + reqData.catalogId,
-				headers:headers
+				headers: getAuthHeader(username , password , xAuthToken)
 			};
 
 			request.get(options, function optionalCallback(err, httpResponse, body) {
@@ -274,19 +264,17 @@ function getRequestStatus(username, password, baseUrl, xAuthToken ) {
 		})
 	}
 }
-
+function getAuthHeader(username , password , xAuthToken) {
+	return {
+		"Authorization" : 'Basic ' + new Buffer(username + ':' + password).toString('base64'),
+		"X-Auth-Token" : xAuthToken
+	}
+}
 
 function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject , desc , catalogId){
 	return function(){
 		return new Promise(function(resolve, reject) {
 			console.log(desc);
-
-			var authString = 'Basic ' + new Buffer(username + ':' + password).toString('base64');
-
-			var headers = {
-				"Authorization" : authString,
-				"X-Auth-Token" : xAuthToken
-			};
 
 			var formData = {
 				requestForm : JSON.stringify(requestObject)
@@ -294,7 +282,7 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 
 			var options = {
 				method: 'POST',
-				headers: headers,
+				headers: getAuthHeader(username , password , xAuthToken) ,
 				rejectUnauthorized: false,
 				url: url,
 				formData: formData
@@ -320,9 +308,7 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 
 csaUtils.submitRequest = function (username, password, action , baseUrl , offeringId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
 	return function(){
-//try a promise here?
 
-	
 		var desc = ["submitting" , action , "request for sub: " , subName].join(' ');
 		var subscriptionRequestUrl = baseUrl + 'csa/api/mpp/mpp-request/' + offeringId + '?catalogId=' + catalogId;		
 		var subOptions = buildRequestOptions(offeringData , newInputData ).fields  
@@ -344,6 +330,64 @@ csaUtils.submitRequest = function (username, password, action , baseUrl , offeri
 			return(err)
 		});
 		return chain;
+	}
+}
+
+function postHttpRequest(options) {
+	options.method = 'POST';
+	return httpRequest(options);
+}
+
+function getHttpRequest(options) {
+	options.method = 'GET';
+	return httpRequest(options);
+}
+
+function httpRequest(options) {
+	return new Promise(function(resolve,reject){
+		request(options, function(err, httpResponse, body) {
+			if (err) {
+				reject(Error(err.message)); 
+			} else {					
+				resolve(body);
+			}
+		});
+	})
+}
+
+csaUtils.getSubIdFromRequest = function(username, password , xAuthToken, baseUrl ) {
+	return function(requestSubscriptionName , requestId){
+		var options = {
+			rejectUnauthorized: false,
+			url: baseUrl + 'csa/api/mpp/mpp-subscription/filter' ,
+			headers: getAuthHeader(username , password , xAuthToken),
+			json: true,
+			body: {name: requestSubscriptionName}
+		};
+
+		return postHttpRequest(options)
+		.then(function(subscriptions){
+
+			return Promise.all(
+				subscriptions.members.map(function(sub){
+					console.log(["checking sub", sub.name , "for the request"].join(' '))
+					options.url = baseUrl + "csa/api/mpp/mpp-subscription/" + sub.id
+					return getHttpRequest(options);
+				})
+			);
+
+		}).then(function(subs){
+
+			var result = _.result(_.find(subs, function(sub) {
+				return sub.requestId === requestId;
+			}), 'id');
+
+			if (typeof result === "undefined")
+				return Promise.reject("could not look up subscription ID from request")
+			else 
+				return result
+		
+		})
 	}
 }
 
