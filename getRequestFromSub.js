@@ -32,11 +32,10 @@ csaUtils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions)
 .then(function(xAuthToken){
 	console.log( 'xauthtoken: \n\n' + xAuthToken + '\n');
 
-	return csaUtils.getSubIdFromRequest(creds.u, creds.pw , xAuthToken, baseUrl )(subName, requestId)
-}).then(function(foundSubId){
+	return csaUtils.getSubIdFromRequest(creds.u, creds.pw , baseUrl ,xAuthToken)({subName: subName , reqId: requestId})
+}).then(function(reqData){
 	
-	console.log(chalk.green(' Found! ') + foundSubId);
+	console.log(chalk.green(' Found! ') + reqData.subId);
 } , function(err){
 	console.log(chalk.red(' ERROR: ' + err))
 })
-

@@ -219,51 +219,7 @@ function buildRequestOptions(doc , newInputData){
 		},{fields:{}})
 }
 
-function pollRequest(username, password, baseUrl, xAuthToken , retry) {  
-	return function(reqData){
-		retry--;
-		if(retry === 0) {
-			//console.log('           timed out request ' + reqData.reqId);
-			return Promise.reject("timed out while polling request status for request " + reqData.reqId);
-		} else {
-			return Promise.resolve(reqData)
-			.then(getRequestStatus(username, password, baseUrl, xAuthToken ))
-			.then(function(requestData) {
-				if(requestData.requestState === 'REJECTED')
-					return Promise.reject("the request " + reqData.reqId + " was rejected by CSA")
-				else if(requestData.requestState === 'COMPLETED')
-					return Promise.resolve(requestData);
-				else
-					return Promise.delay(reqData, getRandomInt(9000,11000) ).then(pollRequest(username, password, baseUrl, xAuthToken , retry));
-			});
-		}
-	}
-}
 
-function getRequestStatus(username, password, baseUrl, xAuthToken ) {
-	return function(reqData){
-		return new Promise(function(resolve, reject) {
-			var desc = "    checking progress on request " + reqData.reqId;
-			console.log(desc);
-
-			var options = {
-				rejectUnauthorized: false,
-				url: baseUrl + 'csa/api/mpp/mpp-request/' + reqData.reqId + '?catalogId=' + reqData.catalogId,
-				headers: getAuthHeader(username , password , xAuthToken)
-			};
-
-			request.get(options, function optionalCallback(err, httpResponse, body) {
-				if (err) {
-					console.log(' failure while ' + err.message);
-					reject(Error(' failure while ' + err.message)); 
-				} else {
-					bodyData = JSON.parse(body)
-					resolve(bodyData);
-				}
-			});
-		})
-	}
-}
 function getAuthHeader(username , password , xAuthToken) {
 	return {
 		"Authorization" : 'Basic ' + new Buffer(username + ':' + password).toString('base64'),
@@ -290,13 +246,17 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 
 			request.post(options, function optionalCallback(err, httpResponse, body) {
 				if (err) {
-					var errorString = '  request' + chalk.red(' not accepted ') + desc + '-' + err.message;
+					var errorString = '  request' + chalk.red(' not sent ') + desc + '-' + err.message;
 					console.log(errorString);
 					reject(Error(errorString)); 
 				} else {					
 					var reqId = JSON.parse(body).id;
-					console.log('  request ' +chalk.green('accepted') +': ' + desc + ' - Request ID:' + reqId )
-					resolve({reqId:reqId , catalogId:catalogId} );
+					console.log('  request ' +chalk.green('sent') +': ' + desc + ' - Request ID:' + reqId )
+					resolve({
+						reqId: reqId , 
+						catalogId: catalogId,
+						subName: requestObject.subscriptionName
+					} );
 				}
 			});
 
@@ -304,9 +264,45 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 	}
 }
 
+function pollRequest(username, password, baseUrl, xAuthToken , retry) {  
+	return function(reqData){
+		retry--;
+		if(retry === 0) {
+			//console.log('           timed out request ' + reqData.reqId);
+			return Promise.reject("timed out while polling request status for request " + reqData.reqId);
+		} else {
+			return Promise.resolve(reqData)
+			.then(getRequestStatus(username, password, baseUrl, xAuthToken ))
+			.then(function(requestData) {
+				if(requestData.requestState === 'REJECTED')
+					return Promise.reject("the request " + reqData.reqId + " was " + chalk.red( requestData.requestState) + " by CSA")
+				else if(requestData.requestState === 'COMPLETED')
+					return Promise.resolve(requestData);
+				else
+					return Promise.delay(reqData, getRandomInt(9000,11000) ).then(pollRequest(username, password, baseUrl, xAuthToken , retry));
+			});
+		}
+	}
+}
+
+function getRequestStatus(username, password, baseUrl, xAuthToken ) {
+	return function(reqData){
+
+		var desc = "    checking progress on request " + reqData.reqId;
+		console.log(desc);
+
+		var options = {
+			rejectUnauthorized: false,
+			url: baseUrl + 'csa/api/mpp/mpp-request/' + reqData.reqId + '?catalogId=' + reqData.catalogId,
+			headers: getAuthHeader(username , password , xAuthToken)
+		};
+
+		return getHttpRequest(options)
+	}
+}
 
 
-csaUtils.submitRequest = function (username, password, action , baseUrl , offeringId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
+csaUtils.submitAndCheckRequest = function (username, password, action , baseUrl , offeringId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
 	return function(){
 
 		var desc = ["submitting" , action , "request for sub: " , subName].join(' ');
@@ -322,6 +318,7 @@ csaUtils.submitRequest = function (username, password, action , baseUrl , offeri
 		}		
 		var chain = sendSubscriptionRequest(username, password, subscriptionRequestUrl, xAuthToken, subRequestDetails , desc , catalogId)()
 		.then(pollRequest(username, password, baseUrl, xAuthToken , 20))
+		.then(getSubIdFromRequest(username, password, baseUrl, xAuthToken ))
 		.then(function(requestData){
 			console.log(["      request" , requestData.id ,"(subscription" , requestData.subscription.displayName , ')' , 'was', chalk.green('successfully fulfilled')].join(' '));
 			return requestData;
@@ -346,23 +343,31 @@ function getHttpRequest(options) {
 function httpRequest(options) {
 	return new Promise(function(resolve,reject){
 		request(options, function(err, httpResponse, body) {
+			var result = "";
 			if (err) {
 				reject(Error(err.message)); 
-			} else {					
-				resolve(body);
+			} else {
+				try {
+					result = JSON.parse(body);
+				}
+				catch (err) {
+					result = body;
+				}
+				resolve(result);
 			}
 		});
 	})
 }
 
-csaUtils.getSubIdFromRequest = function(username, password , xAuthToken, baseUrl ) {
-	return function(requestSubscriptionName , requestId){
+csaUtils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken) {
+	return function(reqData){
+
 		var options = {
 			rejectUnauthorized: false,
 			url: baseUrl + 'csa/api/mpp/mpp-subscription/filter' ,
 			headers: getAuthHeader(username , password , xAuthToken),
 			json: true,
-			body: {name: requestSubscriptionName}
+			body: {name: reqData.subName}
 		};
 
 		return postHttpRequest(options)
@@ -377,16 +382,16 @@ csaUtils.getSubIdFromRequest = function(username, password , xAuthToken, baseUrl
 			);
 
 		}).then(function(subs){
-
 			var result = _.result(_.find(subs, function(sub) {
-				return sub.requestId === requestId;
+				return sub.requestId === reqData.reqId;
 			}), 'id');
 
 			if (typeof result === "undefined")
 				return Promise.reject("could not look up subscription ID from request")
-			else 
-				return result
-		
+			else {
+				reqData.subId = result;
+				return reqData
+			} 
 		})
 	}
 }
