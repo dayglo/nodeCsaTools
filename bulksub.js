@@ -61,7 +61,7 @@ function bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk)
 						"VCPU": 5,
 						"MEMORY" : 4
 					}
-					tasks.push(csaUtils.submitAndCheckRequest(creds.u, creds.pw, "ORDER" , baseUrl ,offeringId , catalogId, categoryName, offeringData , newInputData ,  "A1 bulk test " + i + '.' + j , xAuthToken ));
+					tasks.push(csaUtils.submitAndCheckRequest(creds.u, creds.pw, "ORDER" , baseUrl ,offeringId , catalogId, categoryName, offeringData , newInputData ,  "A4 bulk test " + i + '.' + j , xAuthToken ));
 				}
 				// create a new ubertask, which executes this chunk of tasks simultaneously.
 				allParallelTasks.push( csaUtils.createParallelTask(tasks , "a chunk of " + tasksPerChunk + " parallel tasks") )

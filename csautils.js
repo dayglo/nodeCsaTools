@@ -276,8 +276,9 @@ function pollRequest(username, password, baseUrl, xAuthToken , retry) {
 			.then(function(requestData) {
 				if(requestData.requestState === 'REJECTED')
 					return Promise.reject("the request " + reqData.reqId + " was " + chalk.red( requestData.requestState) + " by CSA")
-				else if(requestData.requestState === 'COMPLETED')
-					return Promise.resolve(requestData);
+				else if(requestData.requestState === 'COMPLETED') {
+					return Promise.resolve(reqData);
+				}
 				else
 					return Promise.delay(reqData, getRandomInt(9000,11000) ).then(pollRequest(username, password, baseUrl, xAuthToken , retry));
 			});
@@ -318,10 +319,10 @@ csaUtils.submitAndCheckRequest = function (username, password, action , baseUrl 
 		}		
 		var chain = sendSubscriptionRequest(username, password, subscriptionRequestUrl, xAuthToken, subRequestDetails , desc , catalogId)()
 		.then(pollRequest(username, password, baseUrl, xAuthToken , 20))
-		.then(getSubIdFromRequest(username, password, baseUrl, xAuthToken ))
-		.then(function(requestData){
-			console.log(["      request" , requestData.id ,"(subscription" , requestData.subscription.displayName , ')' , 'was', chalk.green('successfully fulfilled')].join(' '));
-			return requestData;
+		.then(csaUtils.getSubIdFromRequest(username, password, baseUrl, xAuthToken ))
+		.then(function(reqData){
+			console.log(["      request" , reqData.reqId ,"(subscription" , reqData.subName , '[' + reqData.subId + '])' , 'was', chalk.green('successfully fulfilled')].join(' '));
+			return reqData;
 		},function(err){
 			console.log("      request for subscription " + subName + chalk.red(' failed') + ': ' + err);
 			return(err)
@@ -364,10 +365,13 @@ csaUtils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken
 
 		var options = {
 			rejectUnauthorized: false,
-			url: baseUrl + 'csa/api/mpp/mpp-subscription/filter' ,
+			url: baseUrl + 'csa/api/mpp/mpp-subscription/filter?page-size=100' ,
 			headers: getAuthHeader(username , password , xAuthToken),
 			json: true,
-			body: {name: reqData.subName}
+			body: {
+				name: reqData.subName
+				//requestState: "ACTIVE" nor 'status' works here
+			}
 		};
 
 		return postHttpRequest(options)
@@ -390,7 +394,7 @@ csaUtils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken
 				return Promise.reject("could not look up subscription ID from request")
 			else {
 				reqData.subId = result;
-				return reqData
+				return Promise.resolve(reqData);
 			} 
 		})
 	}
