@@ -33,8 +33,6 @@ IdmCallOptions = {
 	password: creds.idmPw
 }
 
-// need to add the code which substitutes the sub options.
-// 
 
 function modifySub(subId , catalogId , categoryName , newInputData) {
 

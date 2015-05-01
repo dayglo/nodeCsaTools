@@ -155,15 +155,10 @@ csaUtils.getTask = function (xAuthToken , payload, url ,httpOptions, desc) {
 			rest.postJson(url , payload , httpOptions)
 			.spread(
 				function(data){
-					;
 					console.log("     ok!")
 					resolve(data);
-
-
 				},
 				function(data){
-					;
-
 					if (data.code == "PropertyNameUniquenessError") {
 						console.log("     already exists") ;  
 						resolve("PropertyNameUniquenessError");
@@ -177,7 +172,7 @@ csaUtils.getTask = function (xAuthToken , payload, url ,httpOptions, desc) {
 						reject(Error(data.code));
 					}       
 				}
-				);
+			);
 
 		});
 	}
@@ -219,6 +214,20 @@ function buildRequestOptions(doc , newInputData){
 		},{fields:{}})
 }
 
+function log(prefix){
+	return function(data) {
+		var result = "";
+		try {
+			result = JSON.stringify(data);
+		}
+		catch (err) {
+			result = data;
+		}
+		console.log(prefix + ":" + result);
+
+		return Promise.resolve(data);
+	}
+}
 
 function getAuthHeader(username , password , xAuthToken) {
 	return {
@@ -249,14 +258,21 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 					var errorString = '  request' + chalk.red(' not sent ') + desc + '-' + err.message;
 					console.log(errorString);
 					reject(Error(errorString)); 
-				} else {					
+				} else {
+
+					//watch out for 500s here
 					var reqId = JSON.parse(body).id;
-					console.log('  request ' +chalk.green('sent') +': ' + desc + ' - Request ID:' + reqId )
-					resolve({
-						reqId: reqId , 
-						catalogId: catalogId,
-						subName: requestObject.subscriptionName
-					} );
+					if (typeof reqId !== "undefined") {
+						console.log('  request ' +chalk.green('sent') +': ' + desc + ' - Request ID:' + reqId )
+						resolve({
+							reqId: reqId , 
+							catalogId: catalogId,
+							subName: requestObject.subscriptionName
+						} );
+					} else {
+						var resp = JSON.parse(httpResponse.body);
+						reject(resp.messageKey + " - " + resp.description);
+					}
 				}
 			});
 
@@ -303,11 +319,10 @@ function getRequestStatus(username, password, baseUrl, xAuthToken ) {
 }
 
 
-csaUtils.submitAndCheckRequest = function (username, password, action , baseUrl , offeringId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
+csaUtils.submitRequest = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
 	return function(){
-
 		var desc = ["submitting" , action , "request for sub: " , subName].join(' ');
-		var subscriptionRequestUrl = baseUrl + 'csa/api/mpp/mpp-request/' + offeringId + '?catalogId=' + catalogId;		
+		var subscriptionRequestUrl = baseUrl + 'csa/api/mpp/mpp-request/' + objectId + '?catalogId=' + catalogId;		
 		var subOptions = buildRequestOptions(offeringData , newInputData ).fields  
 
 		var subRequestDetails = {
@@ -317,17 +332,40 @@ csaUtils.submitAndCheckRequest = function (username, password, action , baseUrl 
 			fields: subOptions ,
 			action: action
 		}		
-		var chain = sendSubscriptionRequest(username, password, subscriptionRequestUrl, xAuthToken, subRequestDetails , desc , catalogId)()
+		return sendSubscriptionRequest(username, password, subscriptionRequestUrl, xAuthToken, subRequestDetails , desc , catalogId)()
+	}
+}
+
+csaUtils.submitRequestAndWait = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
+	return function(){
+		return csaUtils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken )()
+		.then(pollRequest(username, password, baseUrl, xAuthToken , 20))
+		.then(function(reqData){
+			console.log(["      request" , reqData.subName , 'was', chalk.green('successfully fulfilled.') , "(requestID:" , reqData.reqId , ')'].join(' '));
+			reqData.requestObjectId = objectId
+			return Promise.resolve(reqData);
+		},function(err){
+			console.log("      request for " + action + " on " + subName + chalk.red(' failed') + ': ' + err);
+			return(Promise.reject(err))
+		});
+	}
+}
+
+
+
+csaUtils.submitRequestAndWaitForSubCompletion = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
+	return function(){
+		return csaUtils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken )()
 		.then(pollRequest(username, password, baseUrl, xAuthToken , 20))
 		.then(csaUtils.getSubIdFromRequest(username, password, baseUrl, xAuthToken ))
 		.then(function(reqData){
-			console.log(["      request" , reqData.reqId ,"(subscription" , reqData.subName , '[' + reqData.subId + '])' , 'was', chalk.green('successfully fulfilled')].join(' '));
-			return reqData;
+			console.log(["      request" , reqData.subName , 'was', chalk.green('successfully fulfilled.') , "(requestID:" , reqData.reqId , "subscriptionId:" , reqData.subId , ')'].join(' '));
+			reqData.requestObjectId = objectId
+			return Promise.resolve(reqData);
 		},function(err){
-			console.log("      request for subscription " + subName + chalk.red(' failed') + ': ' + err);
-			return(err)
+			console.log("      request for " + action + " on " + subName  + chalk.red(' failed') + ': ' + err);
+			return(Promise.reject(err))
 		});
-		return chain;
 	}
 }
 
@@ -338,6 +376,11 @@ function postHttpRequest(options) {
 
 function getHttpRequest(options) {
 	options.method = 'GET';
+	return httpRequest(options);
+}
+
+function deleteHttpRequest(options) {
+	options.method = 'DELETE';
 	return httpRequest(options);
 }
 
@@ -385,17 +428,120 @@ csaUtils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken
 				})
 			);
 
-		}).then(function(subs){
+		})
+		//.then(log("debug1: "))
+		.then(function(subs){
 			var result = _.result(_.find(subs, function(sub) {
 				return sub.requestId === reqData.reqId;
 			}), 'id');
 
 			if (typeof result === "undefined")
-				return Promise.reject("could not look up subscription ID from request")
+				return Promise.reject("could not look up subscription ID from request" + JSON.stringify(reqData)  )
 			else {
 				reqData.subId = result;
 				return Promise.resolve(reqData);
 			} 
+		})
+	}
+}
+
+csaUtils.createSubscriptionGetter = function(username, password , baseUrl ,xAuthToken) {
+	return function(subNameFilter) {
+
+		var options = {
+			rejectUnauthorized: false,
+			url: baseUrl + 'csa/api/mpp/mpp-subscription/filter?page-size=10000' ,
+			headers: getAuthHeader(username , password , xAuthToken),
+			json: true,
+			body: {
+				name: subNameFilter
+				//requestState: "ACTIVE" nor 'status' works here
+			}
+		};
+
+		return postHttpRequest(options)
+		.then(function(subscriptions){
+			return Promise.resolve(	project(subscriptions.members , ['id' , 'name']) ) ;
+		})
+	}
+}
+
+function existy(x) { return x != null };
+
+function cat() {
+	var head = _.first(arguments); 
+	if (existy(head))
+		return head.concat.apply(head, _.rest(arguments)); 
+	else
+		return []; 
+}
+
+function construct(head, tail) { 
+	return cat([head], _.toArray(tail));
+}
+
+
+function project(table, keys) { 
+	return _.map(table, function(obj) {
+		return _.pick.apply(null, construct(obj, keys)); 
+	});
+};
+
+csaUtils.createSubscriptionCanceller = function(username, password , baseUrl ,xAuthToken) {
+	return function(subscriptions) {
+
+		var options = {
+			rejectUnauthorized: false,
+			headers: getAuthHeader(username , password , xAuthToken),
+			json: true,
+		};
+
+		var cancelRequestPromises = subscriptions.map(function(sub){
+
+			options.url = baseUrl + 'csa/api/mpp/mpp-subscription/' + sub.id + '/modify';
+			return getHttpRequest(options)
+			.then(function(subData){
+				return csaUtils.submitRequestAndWait (	username, 
+														password, 
+														"CANCEL_SUBSCRIPTION" , 
+														baseUrl , 
+														subData.id , 
+														subData.catalogId, 
+														"", 
+														subData , 
+														{} , 
+														subData.name , 
+														xAuthToken
+				)();
+
+			})
+		});
+
+		return Promise.all(cancelRequestPromises);
+	}
+
+}
+
+
+csaUtils.createSubscriptionDeleter = function(username, password , baseUrl ,xAuthToken) {
+	return function(subscriptions) {
+
+
+		var options = {
+			rejectUnauthorized: false,
+			headers: getAuthHeader(username , password , xAuthToken),
+			json: true,
+		};
+
+		var deletePromises = subscriptions.map(function(sub){
+			console.log(["deleting sub" , sub.name].join(' '))
+			options.url = baseUrl + 'csa/api/mpp/mpp-subscription/' + sub.requestObjectId;
+			return deleteHttpRequest(options)	
+		});
+
+		return Promise.all(deletePromises)
+		.then(function(data){
+			return Promise.resolve ( project(data , ['description' , 'args']))
 		})
 	}
 }

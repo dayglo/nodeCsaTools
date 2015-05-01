@@ -1,3 +1,24 @@
+
+
+// You need this in your standalone.xml, otherwise your connections will run out before you get to 10 subs...
+
+
+                    // <pool>
+                    //     <min-pool-size>100</min-pool-size>
+                    //     <max-pool-size>500</max-pool-size>
+                    //     <prefill>true</prefill>
+                    //     <use-strict-min>false</use-strict-min>
+                    //     <flush-strategy>FailingConnectionOnly</flush-strategy>
+                    // </pool>
+
+// also have this:
+
+
+					// <validation> <check-valid-connection-sql>select 1 from dual</check-valid-connection-sql> <validate-on-match>false</validate-on-match> </validation>
+
+
+
+
 creds = require('./creds');
 csaUtils = require('./csaUtils');
 Q = require('q');
@@ -61,7 +82,7 @@ function bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk)
 						"VCPU": 5,
 						"MEMORY" : 4
 					}
-					tasks.push(csaUtils.submitAndCheckRequest(creds.u, creds.pw, "ORDER" , baseUrl ,offeringId , catalogId, categoryName, offeringData , newInputData ,  "A4 bulk test " + i + '.' + j , xAuthToken ));
+					tasks.push(csaUtils.submitRequestAndWaitForSubCompletion(creds.u, creds.pw, "ORDER" , baseUrl ,offeringId , catalogId, categoryName, offeringData , newInputData ,  "A5 bulk test " + i + '.' + j , xAuthToken ));
 				}
 				// create a new ubertask, which executes this chunk of tasks simultaneously.
 				allParallelTasks.push( csaUtils.createParallelTask(tasks , "a chunk of " + tasksPerChunk + " parallel tasks") )
