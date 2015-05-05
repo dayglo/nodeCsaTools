@@ -20,7 +20,7 @@
 
 
 creds = require('./creds');
-csaUtils = require('./csaUtils');
+csautils = require('./csautils');
 Q = require('q');
 _ = require('lodash');
 
@@ -60,7 +60,7 @@ function bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk)
 
 	offeringUrl = baseUrl + 'csa/api/mpp/mpp-offering/' + offeringId + '?catalogId=' + catalogId + '&category=' + categoryName;
 
-	csaUtils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions)
+	csautils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions)
 	.then(function(xAuthToken){
 
 		console.log( 'xauthtoken: \n\n' + xAuthToken + '\n');
@@ -82,10 +82,10 @@ function bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk)
 						"VCPU": 5,
 						"MEMORY" : 4
 					}
-					tasks.push(csaUtils.submitRequestAndWaitForSubCompletion(creds.u, creds.pw, "ORDER" , baseUrl ,offeringId , catalogId, categoryName, offeringData , newInputData ,  "A5 bulk test " + i + '.' + j , xAuthToken ));
+					tasks.push(csautils.submitRequestAndWaitForSubCompletion(creds.u, creds.pw, "ORDER" , baseUrl ,offeringId , catalogId, categoryName, offeringData , newInputData ,  "A5 bulk test " + i + '.' + j , xAuthToken ));
 				}
 				// create a new ubertask, which executes this chunk of tasks simultaneously.
-				allParallelTasks.push( csaUtils.createParallelTask(tasks , "a chunk of " + tasksPerChunk + " parallel tasks") )
+				allParallelTasks.push( csautils.createParallelTask(tasks , "a chunk of " + tasksPerChunk + " parallel tasks") )
 			}
 			//promise magic to invoke all the ubertasks sequentially
 			return allParallelTasks.reduce(Q.when, Q('a'))

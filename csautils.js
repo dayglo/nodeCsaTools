@@ -10,21 +10,17 @@ chalk = require('chalk');
 
 _ = require('lodash');
 
-
-
 var xpath = require('xpath'),
     dom   = require('xmldom').DOMParser,
     XMLSerializer = require('xmldom').XMLSerializer;
 
-
-
-csaUtils = {}
+csautils = {}
  
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
 
-csaUtils.getPropertyPayload = function (global_id, name , value, type) {
+csautils.getPropertyPayload = function (global_id, name , value, type) {
 
 	type = type.toUpperCase();
 
@@ -72,7 +68,7 @@ csaUtils.getPropertyPayload = function (global_id, name , value, type) {
 	return payload;
 }
 
-csaUtils.getComponentPayload = function ( name , description , consumerVisible) {   
+csautils.getComponentPayload = function ( name , description , consumerVisible) {   
 		var propName = name.toUpperCase().replace(' ','');
 
 		return {
@@ -91,7 +87,7 @@ csaUtils.getComponentPayload = function ( name , description , consumerVisible) 
 		}
 }
 
-csaUtils.loginAndGetToken =  function (baseUrl , credentialData ,IdmCallOptions) {
+csautils.loginAndGetToken =  function (baseUrl , credentialData ,IdmCallOptions) {
 
 	return new Promise(function(resolve, reject) {
 		console.log('Authenticating...');
@@ -110,12 +106,12 @@ csaUtils.loginAndGetToken =  function (baseUrl , credentialData ,IdmCallOptions)
 	});  
 }
 
-csaUtils.getUserIdentifier = function (baseUrl , user , options) {
+csautils.getUserIdentifier = function (baseUrl , user , options) {
 	var url = [baseUrl ,'csa/rest/login/' , "CSA-Provider" ,  '/' , user].join('') ;
-	return csaUtils.queryAndExtract(url , '/person/id' , options)
+	return csautils.queryAndExtract(url , '/person/id' , options)
 }
 
-csaUtils.queryAndExtract =  function (url , xpath , options) {
+csautils.queryAndExtract =  function (url , xpath , options) {
 	//for use with legacy api
 	return function() {
 		return new Promise(function(resolve, reject) {
@@ -135,7 +131,7 @@ csaUtils.queryAndExtract =  function (url , xpath , options) {
 				else {
 					var result = "";
 					try {
-						result = csaUtils.xpathQuery(body,xpath)
+						result = csautils.xpathQuery(body,xpath)
 						resolve(result);
 					} catch (err){
 						reject(Error(' failure while querying xpath: ' + err.message)); 
@@ -146,8 +142,7 @@ csaUtils.queryAndExtract =  function (url , xpath , options) {
 	}
 }
 
-
-csaUtils.getTask = function (xAuthToken , payload, url ,httpOptions, desc) {
+csautils.getTask = function (xAuthToken , payload, url ,httpOptions, desc) {
 	return function(){
 
 		return new Promise(function(resolve, reject) {
@@ -178,8 +173,7 @@ csaUtils.getTask = function (xAuthToken , payload, url ,httpOptions, desc) {
 	}
 }
 
-
-csaUtils.createParallelTask = function(tasks,desc) {
+csautils.createParallelTask = function(tasks,desc) {
 	return function(){
 		return new Promise(function(resolve,reject) {
 
@@ -200,7 +194,6 @@ csaUtils.createParallelTask = function(tasks,desc) {
 		});
 	}
 }
-
 
 function buildRequestOptions(doc , newInputData){
 	
@@ -318,8 +311,7 @@ function getRequestStatus(username, password, baseUrl, xAuthToken ) {
 	}
 }
 
-
-csaUtils.submitRequest = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
+csautils.submitRequest = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
 	return function(){
 		var desc = ["submitting" , action , "request for sub: " , subName].join(' ');
 		var subscriptionRequestUrl = baseUrl + 'csa/api/mpp/mpp-request/' + objectId + '?catalogId=' + catalogId;		
@@ -336,9 +328,9 @@ csaUtils.submitRequest = function (username, password, action , baseUrl , object
 	}
 }
 
-csaUtils.submitRequestAndWait = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
+csautils.submitRequestAndWait = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
 	return function(){
-		return csaUtils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken )()
+		return csautils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken )()
 		.then(pollRequest(username, password, baseUrl, xAuthToken , 20))
 		.then(function(reqData){
 			console.log(["      request" , reqData.subName , 'was', chalk.green('successfully fulfilled.') , "(requestID:" , reqData.reqId , ')'].join(' '));
@@ -351,13 +343,12 @@ csaUtils.submitRequestAndWait = function (username, password, action , baseUrl ,
 	}
 }
 
-
-
-csaUtils.submitRequestAndWaitForSubCompletion = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
+csautils.submitRequestAndWaitForSubCompletion = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
 	return function(){
-		return csaUtils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken )()
+		return csautils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken )()
 		.then(pollRequest(username, password, baseUrl, xAuthToken , 20))
-		.then(csaUtils.getSubIdFromRequest(username, password, baseUrl, xAuthToken ))
+		.then(csautils.getSubIdFromRequest(username, password, baseUrl, xAuthToken ))
+		.then(csautils.createRequestDeleter(username, password, baseUrl, xAuthToken ))
 		.then(function(reqData){
 			console.log(["      request" , reqData.subName , 'was', chalk.green('successfully fulfilled.') , "(requestID:" , reqData.reqId , "subscriptionId:" , reqData.subId , ')'].join(' '));
 			reqData.requestObjectId = objectId
@@ -403,7 +394,7 @@ function httpRequest(options) {
 	})
 }
 
-csaUtils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken) {
+csautils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken) {
 	return function(reqData){
 
 		var options = {
@@ -445,7 +436,7 @@ csaUtils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken
 	}
 }
 
-csaUtils.createSubscriptionGetter = function(username, password , baseUrl ,xAuthToken) {
+csautils.createSubscriptionGetter = function(username, password , baseUrl ,xAuthToken) {
 	return function(subNameFilter) {
 
 		var options = {
@@ -487,7 +478,7 @@ function project(table, keys) {
 	});
 };
 
-csaUtils.createSubscriptionCanceller = function(username, password , baseUrl ,xAuthToken) {
+csautils.createSubscriptionCanceller = function(username, password , baseUrl ,xAuthToken) {
 	return function(subscriptions) {
 
 		var options = {
@@ -501,7 +492,7 @@ csaUtils.createSubscriptionCanceller = function(username, password , baseUrl ,xA
 			options.url = baseUrl + 'csa/api/mpp/mpp-subscription/' + sub.id + '/modify';
 			return getHttpRequest(options)
 			.then(function(subData){
-				return csaUtils.submitRequestAndWait (	username, 
+				return csautils.submitRequestAndWait (	username, 
 														password, 
 														"CANCEL_SUBSCRIPTION" , 
 														baseUrl , 
@@ -522,10 +513,26 @@ csaUtils.createSubscriptionCanceller = function(username, password , baseUrl ,xA
 
 }
 
+csautils.createRequestDeleter = function(username, password , baseUrl ,xAuthToken) {
+	return function(reqData) {
 
-csaUtils.createSubscriptionDeleter = function(username, password , baseUrl ,xAuthToken) {
+		debugger;
+		var options = {
+			rejectUnauthorized: false,
+			headers: getAuthHeader(username , password , xAuthToken),
+			json: true,
+		};
+
+		options.url = baseUrl + 'csa/api/mpp/mpp-request/' + reqData.reqId;
+		return deleteHttpRequest(options)	
+		.then(function(data){
+			return Promise.resolve ( project(data , ['description' , 'args']))
+		})
+	}
+}
+
+csautils.createSubscriptionDeleter = function(username, password , baseUrl ,xAuthToken) {
 	return function(subscriptions) {
-
 
 		var options = {
 			rejectUnauthorized: false,
@@ -541,12 +548,13 @@ csaUtils.createSubscriptionDeleter = function(username, password , baseUrl ,xAut
 
 		return Promise.all(deletePromises)
 		.then(function(data){
+			debugger;
 			return Promise.resolve ( project(data , ['description' , 'args']))
 		})
 	}
 }
 
-csaUtils.editXmlElementText = function(xml,xmlPath,newElementName,value){
+csautils.editXmlElementText = function(xml,xmlPath,newElementName,value){
 	//TODO: Shouldnt need newElementName, should be able to just replace the text node. 
 	// ah who am i kidding this will never be fixed.
 
@@ -558,7 +566,7 @@ csaUtils.editXmlElementText = function(xml,xmlPath,newElementName,value){
 
 }
 
-csaUtils.xpathQuery = function (xml,xPath){
+csautils.xpathQuery = function (xml,xPath){
 	var doc = new dom().parseFromString(xml);
 	var selected =  xpath.select(xPath, doc , true);
 	return selected.childNodes[0].data;
@@ -567,4 +575,4 @@ csaUtils.xpathQuery = function (xml,xPath){
 
 
  
-module.exports = csaUtils;
+module.exports = csautils;

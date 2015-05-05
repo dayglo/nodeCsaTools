@@ -1,5 +1,5 @@
 creds = require('./creds');
-csaUtils = require('./csaUtils');
+csautils = require('./csautils');
 Q = require('q');
 chalk = require('chalk');
 _ = require('lodash');
@@ -28,11 +28,11 @@ IdmCallOptions = {
 
 console.log(Date())
 
-csaUtils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions)
+csautils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions)
 .then(function(xAuthToken){
 	console.log( 'xauthtoken: \n\n' + xAuthToken + '\n');
 
-	return csaUtils.getSubIdFromRequest(creds.u, creds.pw , baseUrl ,xAuthToken)({subName: subName , reqId: requestId})
+	return csautils.getSubIdFromRequest(creds.u, creds.pw , baseUrl ,xAuthToken)({subName: subName , reqId: requestId})
 }).then(function(reqData){
 	
 	console.log(chalk.green(' Found! ') + reqData.subId);

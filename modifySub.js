@@ -1,5 +1,5 @@
 creds = require('./creds');
-csaUtils = require('./csaUtils');
+csautils = require('./csautils');
 uploadFile = require('./uploadFile');
 Q = require('q');
 chalk = require('chalk');
@@ -38,7 +38,7 @@ function modifySub(subId , catalogId , categoryName , newInputData) {
 
 	subscriptionUrl = baseUrl + 'csa/api/mpp/mpp-subscription/' + subId + '/modify';
 
-	csaUtils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions)
+	csautils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions)
 	.then(function(xAuthToken){
 
 		console.log( 'xauthtoken: \n\n' + xAuthToken + '\n');
@@ -50,7 +50,7 @@ function modifySub(subId , catalogId , categoryName , newInputData) {
 		return rest.get(subscriptionUrl , myHttpOptions)
 		.spread(function(subData){
 
-			return csaUtils.submitRequest(creds.u, creds.pw, "MODIFY_SUBSCRIPTION" , baseUrl ,subId , catalogId, categoryName, subData , newInputData , subData.name , xAuthToken )();
+			return csautils.submitRequest(creds.u, creds.pw, "MODIFY_SUBSCRIPTION" , baseUrl ,subId , catalogId, categoryName, subData , newInputData , subData.name , xAuthToken )();
 
 		},function(err){
 			console.log("error in main " + err)

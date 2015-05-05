@@ -1,7 +1,7 @@
 require('es6-promise').polyfill();
 rest = require('restler-q').spread;
 creds = require('./creds');
-csaUtils = require('./csaUtils');
+csautils = require('./csautils');
 uploadFile = require('./uploadFile');
 Q = require('q');
 chalk = require('chalk');
@@ -10,10 +10,6 @@ var fs = require('fs');
 
 
 var ncp = require('ncp').ncp;
-
-var xpath = require('xpath'),
-    dom   = require('xmldom').DOMParser,
-    XMLSerializer = require('xmldom').XMLSerializer;
 
 var uuid = require('node-uuid');
 
@@ -57,7 +53,7 @@ function getIdFromName(data , name){
 
 function buildPropertyTasks(xAuthToken, componentId, properties , httpOptions ) {
 	var tasks = properties.map(function(p){
-		return csaUtils.getTask(xAuthToken, csaUtils.getPropertyPayload(componentId, p.name, p.value , p.type ) , baseUrl + "csa/api/property" ,  httpOptions , 'creating property ' + p.name)
+		return csautils.getTask(xAuthToken, csautils.getPropertyPayload(componentId, p.name, p.value , p.type ) , baseUrl + "csa/api/property" ,  httpOptions , 'creating property ' + p.name)
 	});
 	return tasks;
 }
@@ -74,7 +70,7 @@ function createComponents(packageFile) {
 		//login
 		console.log("retrieving auth token for " + creds.u + " in organisation " + creds.org);
 
-		csaUtils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions)
+		csautils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions)
 		.then(function(xAuthToken){
 			//logged in
 
@@ -175,7 +171,7 @@ function editXmlFile(newDesignName , designUuid) {
 				var editedDoc = Object.keys(substitutions).reduce(function(prev,curr,index,raw){
 
 					elementName = curr.substring(curr.lastIndexOf("/")+1);
-					return csaUtils.editXmlElementText(prev,curr,elementName,substitutions[curr]) ;
+					return csautils.editXmlElementText(prev,curr,elementName,substitutions[curr]) ;
 				},data);
 
 				resolve(editedDoc);
@@ -233,7 +229,7 @@ function createDesigns(packageFile) {
 		.then(editXmlFile(newDesignName, designUuid))
 		.then(writeFile(fullFilePath))
 		.then(createZip('./tmp/' + newDesignFileName , outputZipFilePath))
-		.then(csaUtils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions))
+		.then(csautils.loginAndGetToken(baseUrl , credentialData ,IdmCallOptions))
 		.then(function(xAuthToken){
 
 			return uploadFile.uploadDesign(baseUrl + '/csa/rest/import?userIdentifier=90d96588360da0c701360da0f1d600a1&exceptionCode=200',

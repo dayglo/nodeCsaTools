@@ -1,5 +1,5 @@
 creds = require('./creds');
-csaUtils = require('./csaUtils');
+csautils = require('./csautils');
 Q = require('q');
 chalk = require('chalk');
 _ = require('lodash');
@@ -20,7 +20,7 @@ function tryLegacy() {
 
 	var xpathForSubscriptionId = "/ServiceRequest/requestedAction/property[name='SUBSCRIPTION_ID']/values/value";
 
-	csaUtils.getUserIdentifier(creds.baseUrl ,  creds.legacyApiUser ,	userIdOptions)()
+	csautils.getUserIdentifier(creds.baseUrl ,  creds.legacyApiUser ,	userIdOptions)()
 	.then(function(userIdentifier){
 		console.log(userIdentifier)
 
@@ -34,7 +34,7 @@ function tryLegacy() {
 				userIdentifier ]
 				.join('');
 
-		return csaUtils.queryAndExtract(requestObjectUrl ,  xpathForSubscriptionId , userIdOptions)()
+		return csautils.queryAndExtract(requestObjectUrl ,  xpathForSubscriptionId , userIdOptions)()
 
 	}).then(function(d){
 		console.log(d)
