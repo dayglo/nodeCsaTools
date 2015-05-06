@@ -8,7 +8,7 @@ The csautils module in the repo allows developers to instantiate 'promise return
 
 ##Demo
 
-Here's a <a href-="https://www.youtube.com/watch?v=CEIoDPwDBIo">thoroughly exciting video</a> of some of the tools.
+Here's a <a href="https://www.youtube.com/watch?v=CEIoDPwDBIo">thoroughly exciting video</a> of some of the tools.
 
 ##Install
 NOt an npm module yet, sorry.
