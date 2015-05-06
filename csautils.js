@@ -1,5 +1,3 @@
-//csautils
-
 require('es6-promise').polyfill();
 require('prfun');
 rest = require('restler-q').spread;
@@ -343,13 +341,14 @@ csautils.submitRequestAndWait = function (username, password, action , baseUrl ,
 	}
 }
 
-csautils.submitRequestAndWaitForSubCompletion = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
+csautils.submitRequestAndWaitForCompletion = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
 	return function(){
 		return csautils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken )()
 		.then(pollRequest(username, password, baseUrl, xAuthToken , 20))
 		.then(csautils.getSubIdFromRequest(username, password, baseUrl, xAuthToken ))
 		.then(csautils.createRequestDeleter(username, password, baseUrl, xAuthToken ))
-		.then(function(reqData){
+		.then(function(data){
+			reqData = data[0];
 			console.log(["      request" , reqData.subName , 'was', chalk.green('successfully fulfilled.') , "(requestID:" , reqData.reqId , "subscriptionId:" , reqData.subId , ')'].join(' '));
 			reqData.requestObjectId = objectId
 			return Promise.resolve(reqData);
@@ -397,42 +396,48 @@ function httpRequest(options) {
 csautils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken) {
 	return function(reqData){
 
-		var options = {
-			rejectUnauthorized: false,
-			url: baseUrl + 'csa/api/mpp/mpp-subscription/filter?page-size=100' ,
-			headers: getAuthHeader(username , password , xAuthToken),
-			json: true,
-			body: {
-				name: reqData.subName
-				//requestState: "ACTIVE" nor 'status' works here
-			}
-		};
+		var input = arrayify(reqData);
 
-		return postHttpRequest(options)
-		.then(function(subscriptions){
+		return Promise.all(
+			input.map(function(req){
 
-			return Promise.all(
-				subscriptions.members.map(function(sub){
-					console.log(["checking sub", sub.name , "for the request"].join(' '))
-					options.url = baseUrl + "csa/api/mpp/mpp-subscription/" + sub.id
-					return getHttpRequest(options);
+				var options = {
+					rejectUnauthorized: false,
+					url: baseUrl + 'csa/api/mpp/mpp-subscription/filter?page-size=1000' ,
+					headers: getAuthHeader(username , password , xAuthToken),
+					json: true,
+					body: {
+						name: req.subName
+						//requestState: neither "ACTIVE" nor 'status' works here
+					}
+				};
+
+				return postHttpRequest(options)
+				.then(function(candidateSubscriptionList){
+
+					return Promise.all(
+						candidateSubscriptionList.members.map(function(sub){
+							console.log(["        checking sub", sub.name , "for the request"].join(' '))
+							options.url = baseUrl + "csa/api/mpp/mpp-subscription/" + sub.id
+							return getHttpRequest(options);
+						})
+					);
+
 				})
-			);
+				.then(function(candidateSubscriptions){
+					var result = _.result(_.find(candidateSubscriptions, function(sub) {
+						return sub.requestId === req.reqId;
+					}), 'id');
 
-		})
-		//.then(log("debug1: "))
-		.then(function(subs){
-			var result = _.result(_.find(subs, function(sub) {
-				return sub.requestId === reqData.reqId;
-			}), 'id');
-
-			if (typeof result === "undefined")
-				return Promise.reject("could not look up subscription ID from request" + JSON.stringify(reqData)  )
-			else {
-				reqData.subId = result;
-				return Promise.resolve(reqData);
-			} 
-		})
+					if (typeof result === "undefined")
+						return Promise.reject("could not look up subscription ID from request" + JSON.stringify(req)  )
+					else {
+						req.subId = result;
+						return Promise.resolve(req);
+					} 
+				})
+			})
+		);
 	}
 }
 
@@ -441,7 +446,7 @@ csautils.createSubscriptionGetter = function(username, password , baseUrl ,xAuth
 
 		var options = {
 			rejectUnauthorized: false,
-			url: baseUrl + 'csa/api/mpp/mpp-subscription/filter?page-size=10000' ,
+			url: baseUrl + 'csa/api/mpp/mpp-subscription/filter?page-size=1000' ,
 			headers: getAuthHeader(username , password , xAuthToken),
 			json: true,
 			body: {
@@ -471,15 +476,20 @@ function construct(head, tail) {
 	return cat([head], _.toArray(tail));
 }
 
-
 function project(table, keys) { 
 	return _.map(table, function(obj) {
 		return _.pick.apply(null, construct(obj, keys)); 
 	});
 };
 
+function arrayify(value) {
+	return _.flatten([value,[]]);
+}
+
 csautils.createSubscriptionCanceller = function(username, password , baseUrl ,xAuthToken) {
 	return function(subscriptions) {
+
+		var input = arrayify(subscriptions);
 
 		var options = {
 			rejectUnauthorized: false,
@@ -487,70 +497,79 @@ csautils.createSubscriptionCanceller = function(username, password , baseUrl ,xA
 			json: true,
 		};
 
-		var cancelRequestPromises = subscriptions.map(function(sub){
-
-			options.url = baseUrl + 'csa/api/mpp/mpp-subscription/' + sub.id + '/modify';
-			return getHttpRequest(options)
-			.then(function(subData){
-				return csautils.submitRequestAndWait (	username, 
-														password, 
-														"CANCEL_SUBSCRIPTION" , 
-														baseUrl , 
-														subData.id , 
-														subData.catalogId, 
-														"", 
-														subData , 
-														{} , 
-														subData.name , 
-														xAuthToken
-				)();
-
+		return Promise.all(
+			input.map(function(sub){
+				options.url = baseUrl + 'csa/api/mpp/mpp-subscription/' + sub.id + '/modify';
+				return getHttpRequest(options)
+				.then(function(subData){
+					return csautils.submitRequestAndWait (	username, 
+															password, 
+															"CANCEL_SUBSCRIPTION" , 
+															baseUrl , 
+															subData.id , 
+															subData.catalogId, 
+															"", 
+															subData , 
+															{} , 
+															subData.name , 
+															xAuthToken
+					)(); // immediately start the task
+				})
 			})
-		});
-
-		return Promise.all(cancelRequestPromises);
+		);
 	}
-
 }
 
 csautils.createRequestDeleter = function(username, password , baseUrl ,xAuthToken) {
 	return function(reqData) {
 
-		debugger;
+		var input = arrayify(reqData);
+
 		var options = {
 			rejectUnauthorized: false,
 			headers: getAuthHeader(username , password , xAuthToken),
 			json: true,
 		};
 
-		options.url = baseUrl + 'csa/api/mpp/mpp-request/' + reqData.reqId;
-		return deleteHttpRequest(options)	
-		.then(function(data){
-			return Promise.resolve ( project(data , ['description' , 'args']))
-		})
+		return Promise.all(
+			input.map(function(sub){
+				console.log(["    deleting request" , sub.reqId , "for subscription" , sub.subName].join(' '));
+				options.url = baseUrl + 'csa/api/mpp/mpp-request/' + sub.reqId;
+				return deleteHttpRequest(options)
+				.then(function(){
+					sub.requestDeleted = true;
+					return Promise.resolve(sub)
+				})
+			})
+		);
 	}
 }
 
 csautils.createSubscriptionDeleter = function(username, password , baseUrl ,xAuthToken) {
 	return function(subscriptions) {
 
+		var input = arrayify(subscriptions);
+
 		var options = {
 			rejectUnauthorized: false,
 			headers: getAuthHeader(username , password , xAuthToken),
 			json: true,
 		};
 
-		var deletePromises = subscriptions.map(function(sub){
-			console.log(["deleting sub" , sub.name].join(' '))
-			options.url = baseUrl + 'csa/api/mpp/mpp-subscription/' + sub.requestObjectId;
-			return deleteHttpRequest(options)	
-		});
-
-		return Promise.all(deletePromises)
-		.then(function(data){
-			debugger;
-			return Promise.resolve ( project(data , ['description' , 'args']))
-		})
+		return Promise.all(
+			input.map(function(sub){
+				debugger;
+				console.log(["      deleting sub" , sub.subName].join(' '))
+				options.url = baseUrl + 'csa/api/mpp/mpp-subscription/' + sub.requestObjectId;
+				return deleteHttpRequest(options)
+				.then(function(data){
+					sub.description = data.description;
+					sub.args = data.args;
+					sub.subscriptionDeleted = true;
+					return Promise.resolve(sub)
+				})
+			})
+		);
 	}
 }
 

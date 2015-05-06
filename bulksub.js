@@ -31,6 +31,7 @@ catalogId  = argv._[1];
 categoryName  = argv._[2];
 chunks  = argv._[3];
 tasksPerChunk = argv._[4];
+subscriptionNamePrefix = argv._[5];
 
 
 var baseUrl = creds.baseUrl; // this format "https://vm01:8444/"
@@ -56,7 +57,7 @@ IdmCallOptions = {
 
 
 
-function bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk) {
+function bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk , subscriptionNamePrefix) {
 
 	offeringUrl = baseUrl + 'csa/api/mpp/mpp-offering/' + offeringId + '?catalogId=' + catalogId + '&category=' + categoryName;
 
@@ -82,7 +83,7 @@ function bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk)
 						"VCPU": 5,
 						"MEMORY" : 4
 					}
-					tasks.push(csautils.submitRequestAndWaitForSubCompletion(creds.u, creds.pw, "ORDER" , baseUrl ,offeringId , catalogId, categoryName, offeringData , newInputData ,  "A5 bulk test " + i + '.' + j , xAuthToken ));
+					tasks.push(csautils.submitRequestAndWaitForCompletion(creds.u, creds.pw, "ORDER" , baseUrl ,offeringId , catalogId, categoryName, offeringData , newInputData ,  [subscriptionNamePrefix, ":" , i , '.' , j].join('') , xAuthToken ));
 				}
 				// create a new ubertask, which executes this chunk of tasks simultaneously.
 				allParallelTasks.push( csautils.createParallelTask(tasks , "a chunk of " + tasksPerChunk + " parallel tasks") )
@@ -102,9 +103,9 @@ function bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk)
 	});;
 }
 // example: 
-// node bulksub.js 2c9030074c745ae6014c74c0ba370b76 2c9030e44b77dd62014b7de363b82048  SOFTWARE  1  1 
+// node bulksub.js 2c9030074c745ae6014c74c0ba370b76 2c9030e44b77dd62014b7de363b82048  SOFTWARE  1  1 'my bulk request'
 
-bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk);
+bulksub(offeringId , catalogId , categoryName , chunks , tasksPerChunk , subscriptionNamePrefix);
 
 
 
