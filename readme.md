@@ -1,13 +1,16 @@
 #nodeCsaTools
 
-This repo holds a set of scripts for automation of the HP tool 'Cloud Service Automation'.
+This repo is a work-in-progress set of tools for automation of the HP system 'Cloud Service Automation'.
 
-HP CSA is an enterprise app that exposes an api which is meant for companies to build their own 'marketplace' portal. These portals are menat for developers to request infrastructure resources, a bit like an in-house AWS (but not as good). This api has turned out to be a useful method by which we can run end-to-end automated tests of our customer-facing services.
+HP CSA is an enterprise app that exposes an api which is meant for companies to build their own 'marketplace' portal. These portals are for developers and delivery teams to request infrastructure resources, a bit like an in-house AWS (but not as good). This api has turned out to be a useful method by which we can run end-to-end automated tests of our customer-facing services.
 
 The csautils module in the repo allows developers to instantiate 'promise returning functions', which can be chained and recombined to request and destroy CSA services. The aim of this project is to allow devs to create tests which look synchronous, but all the while retaining their asynchronous nature. Promises are cool.
 
 
-Currently the tools include:
+#Install
+NOt an npm module yet, sorry.
+
+Just clone, run npm install for dependencies and then run the commands detailed below. Currently the tools include:
 
 ##Login
 See the other tools for an example of how to log in.
