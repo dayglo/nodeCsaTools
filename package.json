@@ -1,8 +1,8 @@
 {
-  "name": "nodeapi",
-  "version": "1.0.0",
+  "name": "nodeCsaTools",
+  "version": "0.5.0",
   "description": "hp csa automation toolkit",
-  "main": "apply.js",
+  "main": "bulksub.js",
   "dependencies": {
     "adm-zip": "0.4.7",
     "better-console": "0.2.4",
@@ -29,8 +29,8 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no tests yet.\" && exit 1"
   },
   "author": "George Cairns",
-  "license": "ISC"
+  "license": "MIT"
 }
