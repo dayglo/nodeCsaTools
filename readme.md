@@ -10,6 +10,12 @@ The csautils module in the repo allows developers to instantiate 'promise return
 
 Here's a <a href="https://www.youtube.com/watch?v=CEIoDPwDBIo">thoroughly exciting video</a> of some of the tools.
 
+##Run straight from Docker
+If you like, you can run straight from [the docker image](https://registry.hub.docker.com/u/dayglo/nodecsatools/), like this:
+
+docker run dayglo/nodecsatools bulksub.js 2c9030074c745ae6014c74c0ba370b76 2c9030e44b77dd62014b7de363b82048  SOFTWARE 1 1 'my subscription prefix'
+
+(see below for usage)
 
 ##Install
 Not an npm module yet, sorry.
