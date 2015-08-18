@@ -193,17 +193,73 @@ csautils.createParallelTask = function(tasks,desc) {
 	}
 }
 
-function buildRequestOptions(doc , newInputData){
-	
-		return doc.fields.reduce(function(prev,curr){
-			if (typeof newInputData[curr.name] !== "undefined") {
-				prev.fields[curr.id] = newInputData[curr.name]
-			} else {
-				prev.fields[curr.id] = curr.value;
-			}
-			return prev;
-		},{fields:{}})
+function getTriggerMap(dependencies) {
+
+    var triggerGroupList = _.filter(
+    _.map(dependencies, function (dep) {
+        return _.uniq(
+        _.map(dep.triggers, function (field) {
+            return field.replace(".value", "").replace(".visible", "")
+        }))
+    }), function (trig) {
+        // there's no point including groups with only one field, 
+        // as that means there are no others to switch off.
+        return trig.length > 1;
+    });
+
+    return _.reduce(triggerGroupList, function (final, group) {
+        //accumulate by merging objects
+        return _.merge(final,
+        _.reduce(group, function (acc, field) {
+            acc[field] = _.without(group, field)
+            return acc;
+        }, {}))
+    }, {})
+
 }
+
+function buildRequestOptions(offeringDoc , newInputData) {
+    
+    var triggerMap = getTriggerMap(offeringDoc.dependencies);
+
+    return _.reduce(offeringDoc.fields, function (prev, curr) {
+
+        // if name matches a regex of this  904ECD17_5EE9_58FA_A50D_64F6F70E7C35 , then check new input key against displayname
+        // if not, check new input key against name.
+        // This is because the CSA api needs us to be able to select options as well as fields.
+
+        var newValue = newInputData[curr.name];
+        if (curr.name.match(/^.{8}_(.{4}_){3}.{12}$/)) {
+            newValue = newInputData[curr.displayName]
+        } 
+
+        if (typeof newValue !== "undefined") {
+
+            // write the main field + value to the output object
+            prev.fields[curr.id] = newValue;
+
+            //get and add negated fields for the main field.
+            var fieldsToNegate = triggerMap[curr.id];
+            //log("  fields to negate for current field " + JSON.stringify(fieldsToNegate))
+
+            var negatedFields = _.reduce(fieldsToNegate  , function(accFields , fieldId){
+                accFields[fieldId] = !newValue;
+                return accFields
+            },{})
+           
+            prev.fields = _.merge(prev.fields , negatedFields)
+
+        } else {
+            // just pass the value through unaffected.
+            prev.fields[curr.id] = curr.value;
+        }
+        
+        return prev;
+    }, {
+        fields: {}
+    })
+}
+
 
 function log(prefix){
 	return function(data) {
@@ -293,15 +349,54 @@ function pollRequest(username, password, baseUrl, xAuthToken , retry) {
 	}
 }
 
+function pollSub(username, password, baseUrl, xAuthToken , retry) {  
+	return function(reqData){
+		retry--;
+		if(retry === 0) {
+			//console.log('           timed out request ' + reqData.reqId);
+			return Promise.reject("timed out while polling subscription status for sub " + reqData.subId);
+		} else {
+			return Promise.resolve(reqData)
+			.then(getSubStatus(username, password, baseUrl, xAuthToken ))
+			.then(function(subData) {
+				if( (subData.status === 'CANCELLED') || (subData.status === 'TERMINATED') || (subData.status === 'EXPIRED') )
+					return Promise.reject("the request " + reqData.subId + " was " + chalk.red(subData.status) )
+				else if(subData.status === 'ACTIVE') {
+					reqData.subStatus = subData.status
+					return Promise.resolve(reqData);
+				}
+				else
+					return Promise.delay(reqData, getRandomInt(9000,11000) ).then(pollSub(username, password, baseUrl, xAuthToken , retry));
+			});
+		}
+	}
+}
+
 function getRequestStatus(username, password, baseUrl, xAuthToken ) {
 	return function(reqData){
 
-		var desc = "    checking progress on request " + reqData.reqId;
+		var desc = "    getting status of request " + reqData.reqId;
 		console.log(desc);
 
 		var options = {
 			rejectUnauthorized: false,
 			url: baseUrl + 'csa/api/mpp/mpp-request/' + reqData.reqId + '?catalogId=' + reqData.catalogId,
+			headers: getAuthHeader(username , password , xAuthToken)
+		};
+
+		return getHttpRequest(options)
+	}
+}
+
+function getSubStatus(username, password, baseUrl, xAuthToken ) {
+	return function(reqData){
+
+		var desc = "    getting status of subscription " + reqData.subId;
+		console.log(desc);
+
+		var options = {
+			rejectUnauthorized: false,
+			url: baseUrl + 'csa/api/mpp/mpp-subscription/' + reqData.subId ,
 			headers: getAuthHeader(username , password , xAuthToken)
 		};
 
@@ -331,7 +426,7 @@ csautils.submitRequestAndWait = function (username, password, action , baseUrl ,
 		return csautils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken )()
 		.then(pollRequest(username, password, baseUrl, xAuthToken , 20))
 		.then(function(reqData){
-			console.log(["      request" , reqData.subName , 'was', chalk.green('successfully fulfilled.') , "(requestID:" , reqData.reqId , ')'].join(' '));
+			console.log(["      request" , reqData.subName , 'was', chalk.green('completed.') , "(requestID:" , reqData.reqId , ')'].join(' '));
 			reqData.requestObjectId = objectId
 			return Promise.resolve(reqData);
 		},function(err){
@@ -346,6 +441,7 @@ csautils.submitRequestAndWaitForCompletion = function (username, password, actio
 		return csautils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken )()
 		.then(pollRequest(username, password, baseUrl, xAuthToken , 20))
 		.then(csautils.getSubIdFromRequest(username, password, baseUrl, xAuthToken ))
+		.then(pollSub(username, password, baseUrl, xAuthToken , 20))
 		.then(csautils.createRequestDeleter(username, password, baseUrl, xAuthToken ))
 		.then(function(data){
 			reqData = data[0];
@@ -394,50 +490,43 @@ function httpRequest(options) {
 }
 
 csautils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken) {
-	return function(reqData){
+	return function(req){
 
-		var input = arrayify(reqData);
+		var options = {
+			rejectUnauthorized: false,
+			url: baseUrl + 'csa/api/mpp/mpp-subscription/filter?page-size=1000' ,
+			headers: getAuthHeader(username , password , xAuthToken),
+			json: true,
+			body: {
+				name: req.subName
+				//requestState: neither "ACTIVE" nor 'status' works here
+			}
+		};
 
-		return Promise.all(
-			input.map(function(req){
+		return postHttpRequest(options)
+		.then(function(candidateSubscriptionList){
 
-				var options = {
-					rejectUnauthorized: false,
-					url: baseUrl + 'csa/api/mpp/mpp-subscription/filter?page-size=1000' ,
-					headers: getAuthHeader(username , password , xAuthToken),
-					json: true,
-					body: {
-						name: req.subName
-						//requestState: neither "ACTIVE" nor 'status' works here
-					}
-				};
-
-				return postHttpRequest(options)
-				.then(function(candidateSubscriptionList){
-
-					return Promise.all(
-						candidateSubscriptionList.members.map(function(sub){
-							console.log(["        checking sub", sub.name , "for the request"].join(' '))
-							options.url = baseUrl + "csa/api/mpp/mpp-subscription/" + sub.id
-							return getHttpRequest(options);
-						})
-					);
-
+			return Promise.all(
+				candidateSubscriptionList.members.map(function(sub){
+					console.log(["        checking sub", sub.name , "for the request"].join(' '))
+					options.url = baseUrl + "csa/api/mpp/mpp-subscription/" + sub.id
+					return getHttpRequest(options);
 				})
-				.then(function(candidateSubscriptions){
-					var result = _.result(_.find(candidateSubscriptions, function(sub) {
-						return sub.requestId === req.reqId;
-					}), 'id');
+			);
 
-					if (typeof result === "undefined")
-						return Promise.reject("could not look up subscription ID from request" + JSON.stringify(req)  )
-					else {
-						req.subId = result;
-						return Promise.resolve(req);
-					} 
-				})
-			})
-		);
+		})
+		.then(function(candidateSubscriptions){
+			var result = _.result(_.find(candidateSubscriptions, function(sub) {
+				return sub.requestId === req.reqId;
+			}), 'id');
+
+			if (typeof result === "undefined")
+				return Promise.reject("could not look up subscription ID from request" + JSON.stringify(req)  )
+			else {
+				req.subId = result;
+				return Promise.resolve(req);
+			} 
+		})
 	}
 }
 
