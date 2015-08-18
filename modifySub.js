@@ -50,7 +50,7 @@ function modifySub(subId , catalogId , categoryName , newInputData) {
 		return rest.get(subscriptionUrl , myHttpOptions)
 		.spread(function(subData){
 
-			return csautils.submitRequestAndWait(creds.u, creds.pw, "MODIFY_SUBSCRIPTION" , baseUrl ,subId , catalogId, categoryName, subData , newInputData , subData.name , xAuthToken )();
+			return csautils.submitRequestAndWaitForActiveSub(creds.u, creds.pw, "MODIFY_SUBSCRIPTION" , baseUrl ,subId , catalogId, categoryName, subData , newInputData , subData.name , xAuthToken )();
 
 		},function(err){
 			console.log("error in main " + err)
