@@ -16,13 +16,108 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
 
+// This is commented out because the method that requires it needs admin access. will look again later.
+// csautils.lookupCatalogId = function (username, password , baseUrl ,xAuthToken , catalogName) {
+// 	return new Promise(function(resolve, reject){
+// 		var options = {
+// 			rejectUnauthorized: false,
+// 			url: baseUrl + "csa/api/catalog/filter" ,
+// 			headers: getAuthHeader(username , password , xAuthToken),
+// 			json: true,
+// 			body: {
+// 				state: "Active"
+// 			}
+// 		};
+// 		return postHttpRequest(options)
+// 		.then(
+// 			function(catalogList){
+// 				debugger;
+// 				var selfRef = _.result(_.find(catalogList.members, function(cat) {
+// 					return cat.name === catalogName;
+// 				}), '@self')
+				
+// 				if (typeof selfRef == "undefined") {
+// 					reject ("There were no catalogs with the name " + catalogName)
+// 				}
+
+// 				catalogId = selfRef.split('/')[4]
+
+// 				if (catalogId.match(/^[0-9A-Fa-f]+$/)) {
+// 					resolve(catalogId)
+// 				} else {
+// 					reject("the catalog ID returned was invalid: " + catalogId)
+// 				}
+// 			}
+// 			,function(e){
+// 				reject("problem looking up catalog ID: "+ e)
+// 			}
+// 		)
+// 	});
+// }
+
+
+csautils.lookupOfferingId = function (username, password , baseUrl ,xAuthToken , offeringName , categoryName , catalogNameOrId) {
+	return new Promise(function(resolve, reject){
+
+		var catalogId = ""
+		var catalogName = ""
+        if (catalogNameOrId.match(/^[0-9A-Fa-f]+$/)) {
+            catalogId = catalogNameOrId
+        } else {
+        	catalogName = catalogNameOrId
+        }
+
+		var options = {
+			rejectUnauthorized: false,
+			url: baseUrl + 'csa/api/mpp/mpp-offering/filter' ,
+			headers: getAuthHeader(username , password , xAuthToken),
+			json: true,
+			body: {
+				"name": offeringName,
+				"category":categoryName
+			}
+		}
+
+		return postHttpRequest(options)
+		.then(
+			function(offeringList){
+				if (offeringList["@total_results"] === 0) {
+					reject("No results were returned from offering Id query for "+ offeringName)
+				} else {
+					offeringId =
+						_.result(
+							_.find(offeringList.members, function(offering) {
+								return (
+									(offering.displayName === offeringName) 
+									&& 
+									(
+										(offering.catalogId === catalogId) || 
+										(offering.catalogName === catalogName) 
+									)
+								)
+							})
+						, 'id')
+
+					if (typeof offeringId == "undefined") {
+						reject ("An offering was found, but it was in a different catalog to the one specified." )
+					} else {
+						resolve (offeringId)
+					}
+				}
+			}
+			,function(e){
+				reject("problem looking up offering ID: "+ e)
+			}
+		)
+
+	})
+}
 
 
 csautils.loginAndGetToken =  function (baseUrl , credentialData ,IdmCallOptions) {
 
 	return new Promise(function(resolve, reject) {
 		console.log('Authenticating...');
-
 		rest.postJson(baseUrl + 'idm-service/v2.0/tokens/', credentialData ,IdmCallOptions )
 		.spread(
 			function(data){
