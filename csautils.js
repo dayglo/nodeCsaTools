@@ -8,10 +8,10 @@ chalk = require('chalk');
 
 _ = require('lodash');
 
-
-
 csautils = {}
- 
+log = console.log
+//log = function(){}
+
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
@@ -56,7 +56,7 @@ function getRandomInt(min, max) {
 // }
 
 
-csautils.lookupOfferingId = function (username, password , baseUrl ,xAuthToken , offeringName , categoryName , catalogNameOrId) {
+csautils.lookupOffering = function (username, password , baseUrl ,xAuthToken , offeringName , categoryName , catalogNameOrId) {
 	return new Promise(function(resolve, reject){
 
 		var catalogId = ""
@@ -84,24 +84,24 @@ csautils.lookupOfferingId = function (username, password , baseUrl ,xAuthToken ,
 				if (offeringList["@total_results"] === 0) {
 					reject("No results were returned from offering Id query for "+ offeringName)
 				} else {
-					offeringId =
-						_.result(
-							_.find(offeringList.members, function(offering) {
-								return (
-									(offering.displayName === offeringName) 
-									&& 
-									(
-										(offering.catalogId === catalogId) || 
-										(offering.catalogName === catalogName) 
-									)
-								)
-							})
-						, 'id')
 
-					if (typeof offeringId == "undefined") {
+					function doesOfferingMatch(offering) {
+						return (
+							(offering.displayName === offeringName) 
+							&& 
+							(
+							(offering.catalogId === catalogId) || 
+							(offering.catalogName === catalogName) 
+							)
+						)
+					}
+					debugger;
+					var myOffering  = _.find(offeringList.members, doesOfferingMatch);
+								
+					if (typeof myOffering == "undefined") {
 						reject ("An offering was found, but it was in a different catalog to the one specified." )
 					} else {
-						resolve (offeringId)
+						resolve(myOffering)
 					}
 				}
 			}
@@ -117,11 +117,11 @@ csautils.lookupOfferingId = function (username, password , baseUrl ,xAuthToken ,
 csautils.loginAndGetToken =  function (baseUrl , credentialData ,IdmCallOptions) {
 
 	return new Promise(function(resolve, reject) {
-		console.log('Authenticating...');
+		log('Authenticating...');
 		rest.postJson(baseUrl + 'idm-service/v2.0/tokens/', credentialData ,IdmCallOptions )
 		.spread(
 			function(data){
-				console.log("got token.");
+				log("got token.");
 				resolve(data.token.id);
 			},
 			function(data){
@@ -136,7 +136,7 @@ csautils.createParallelTask = function(tasks,desc) {
 	return function(){
 		return new Promise(function(resolve,reject) {
 
-			console.log('executing ' + desc);
+			log('executing ' + desc);
 
 			var executingTasks = tasks.map(function(task) {
 				return task();
@@ -144,10 +144,10 @@ csautils.createParallelTask = function(tasks,desc) {
 
 			return Promise.all(executingTasks)
 			.then(function(data){
-				console.log (desc + ' executed');				
+				log (desc + ' executed');				
 				resolve(data);
 			},function(err){
-				console.log (desc + ' did not work '+ err);
+				log (desc + ' did not work '+ err);
 				reject(desc + ' - ' + err);
 			})
 		});
@@ -231,7 +231,7 @@ function log(prefix){
 		catch (err) {
 			result = data;
 		}
-		console.log(prefix + ":" + result);
+		log(prefix + ":" + result);
 
 		return Promise.resolve(data);
 	}
@@ -247,7 +247,7 @@ function getAuthHeader(username , password , xAuthToken) {
 function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject , desc , catalogId){
 	return function(){
 		return new Promise(function(resolve, reject) {
-			console.log(desc);
+			log(desc);
 
 			var formData = {
 				requestForm : JSON.stringify(requestObject)
@@ -261,17 +261,17 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 				formData: formData
 			};
 
-			request.post(options, function optionalCallback(err, httpResponse, body) {
+			request.post(options, function (err, httpResponse, body) {
 				if (err) {
 					var errorString = '  request' + chalk.red(' not sent ') + desc + '-' + err.message;
-					console.log(errorString);
+					log(errorString);
 					reject(Error(errorString)); 
 				} else {
 
 					//watch out for 500s here
 					var reqId = JSON.parse(body).id;
 					if (typeof reqId !== "undefined") {
-						console.log('  request ' +chalk.green('sent') +': ' + desc + ' - Request ID:' + reqId )
+						log('  request ' +chalk.green('sent') +': ' + desc + ' - Request ID:' + reqId )
 						resolve({
 							reqId: reqId , 
 							catalogId: catalogId,
@@ -292,7 +292,7 @@ function pollRequest(username, password, baseUrl, xAuthToken , retry) {
 	return function(reqData){
 		retry--;
 		if(retry === 0) {
-			//console.log('           timed out request ' + reqData.reqId);
+			//log('           timed out request ' + reqData.reqId);
 			return Promise.reject("timed out while polling request status for request " + reqData.reqId);
 		} else {
 			return Promise.resolve(reqData)
@@ -314,7 +314,7 @@ function pollSub(username, password, baseUrl, xAuthToken , retry) {
 	return function(reqData){
 		retry--;
 		if(retry === 0) {
-			//console.log('           timed out request ' + reqData.reqId);
+			//log('           timed out request ' + reqData.reqId);
 			return Promise.reject("timed out while polling subscription status for sub " + reqData.subId);
 		} else {
 			return Promise.resolve(reqData)
@@ -337,7 +337,7 @@ function getRequestStatus(username, password, baseUrl, xAuthToken ) {
 	return function(reqData){
 
 		var desc = "    getting status of request " + reqData.reqId;
-		console.log(desc);
+		log(desc);
 
 		var options = {
 			rejectUnauthorized: false,
@@ -353,7 +353,7 @@ function getSubStatus(username, password, baseUrl, xAuthToken ) {
 	return function(reqData){
 
 		var desc = "    getting status of subscription " + reqData.subId;
-		console.log(desc);
+		log(desc);
 
 		var options = {
 			rejectUnauthorized: false,
@@ -387,15 +387,46 @@ csautils.submitRequestAndWait = function (username, password, action , baseUrl ,
 		return csautils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken )()
 		.then(pollRequest(username, password, baseUrl, xAuthToken , 20))
 		.then(function(reqData){
-			console.log(["      request" , reqData.subName , 'was', chalk.green('completed.') , "(requestID:" , reqData.reqId , ')'].join(' '));
+			log(["      request" , reqData.subName , 'was', chalk.green('completed.') , "(requestID:" , reqData.reqId , ')'].join(' '));
 			reqData.requestObjectId = objectId
 			return Promise.resolve(reqData);
 		},function(err){
-			console.log("      request for " + action + " on " + subName + chalk.red(' failed') + ': ' + err);
+			log("      request for " + action + " on " + subName + chalk.red(' failed') + ': ' + err);
 			return(Promise.reject(err))
 		});
 	}
 }
+
+
+csautils.order = function  (username, password, xAuthToken , baseUrl , catalogName, categoryName , offeringName , newInputData , subName ) {
+	return csautils.lookupOffering (username, password , baseUrl ,xAuthToken , offeringName , categoryName , catalogName)
+    .then(function(offering){
+    	debugger;
+    	return csautils.submitRequestAndWaitForActiveSub(username, password, "ORDER" , baseUrl , offering.id , offering.catalogId, categoryName, offering , newInputData ,  subName , xAuthToken )()
+    })
+}
+
+csautils.modify = function  (username, password, xAuthToken , baseUrl , catalogName, categoryName , offeringName , newInputData , subName ) {
+	var subscriptionUrl = baseUrl + 'csa/api/mpp/mpp-subscription/' + subId + '/modify';
+	getCsaData (username, password, xAuthToken , subscriptionUrl )
+    .then(function(subData){
+    	debugger;
+    	return csautils.submitRequestAndWaitForActiveSub(username, password, "MODIFY_SUBSCRIPTION" , baseUrl , offering.id , offering.catalogId, categoryName, offering , newInputData ,  subName , xAuthToken )
+    })
+}
+
+function getCsaData (username, password, xAuthToken , url ){
+	return function(){
+		var options = {
+			rejectUnauthorized: false,
+			url: url,
+			headers: getAuthHeader(username , password , xAuthToken),
+			json: true,
+		};
+		return getHttpRequest(options)	
+	}
+}
+
 
 csautils.submitRequestAndWaitForActiveSub = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
 	return function(){
@@ -406,11 +437,11 @@ csautils.submitRequestAndWaitForActiveSub = function (username, password, action
 		.then(csautils.createRequestDeleter(username, password, baseUrl, xAuthToken ))
 		.then(function(data){
 			reqData = data[0];
-			console.log(["      request" , reqData.subName , 'was', chalk.green('successfully fulfilled.') , "(requestID:" , reqData.reqId , "subscriptionId:" , reqData.subId , ')'].join(' '));
+			log(["      request" , reqData.subName , 'was', chalk.green('successfully fulfilled.') , "(requestID:" , reqData.reqId , "subscriptionId:" , reqData.subId , ')'].join(' '));
 			reqData.requestObjectId = objectId
 			return Promise.resolve(reqData);
 		},function(err){
-			console.log("      request for " + action + " on " + subName  + chalk.red(' failed') + ': ' + err);
+			log("      request for " + action + " on " + subName  + chalk.red(' failed') + ': ' + err);
 			return(Promise.reject(err))
 		});
 	}
@@ -469,7 +500,7 @@ csautils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken
 
 			return Promise.all(
 				candidateSubscriptionList.members.map(function(sub){
-					console.log(["        checking sub", sub.name , "for the request"].join(' '))
+					log(["        checking sub", sub.name , "for the request"].join(' '))
 					options.url = baseUrl + "csa/api/mpp/mpp-subscription/" + sub.id
 					return getHttpRequest(options);
 				})
@@ -583,7 +614,7 @@ csautils.createRequestDeleter = function(username, password , baseUrl ,xAuthToke
 
 		return Promise.all(
 			input.map(function(sub){
-				console.log(["    deleting request" , sub.reqId , "for subscription" , sub.subName].join(' '));
+				log(["    deleting request" , sub.reqId , "for subscription" , sub.subName].join(' '));
 				options.url = baseUrl + 'csa/api/mpp/mpp-request/' + sub.reqId;
 				return deleteHttpRequest(options)
 				.then(function(){
@@ -609,7 +640,7 @@ csautils.createSubscriptionDeleter = function(username, password , baseUrl ,xAut
 		return Promise.all(
 			input.map(function(sub){
 				debugger;
-				console.log(["      deleting sub" , sub.subName].join(' '))
+				log(["      deleting sub" , sub.subName].join(' '))
 				options.url = baseUrl + 'csa/api/mpp/mpp-subscription/' + sub.requestObjectId;
 				return deleteHttpRequest(options)
 				.then(function(data){

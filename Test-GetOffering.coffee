@@ -9,22 +9,24 @@ log = (text) ->
 hpcsa.loginAndGetToken baseUrl , config.csaConn.credentialData ,config.csaConn.IdmCallOptions
 .then (xAuthToken) ->
 
-	hpcsa.lookupOfferingId	config.csaConn.CONSUMPTION_API_USER, 
+	hpcsa.lookupOffering	config.csaConn.CONSUMPTION_API_USER, 
 							config.csaConn.CONSUMPTION_API_PASSWORD , 
 							baseUrl,
 							xAuthToken, 
 							"CSATesterOffering",
 							"SIMPLE_SYSTEM"
 							"Global Shared Catalog"
-	.then log 
+	.then (d) ->
+		log JSON.stringify d 	
 	.then ->
-		hpcsa.lookupOfferingId	config.csaConn.CONSUMPTION_API_USER, 
+		hpcsa.lookupOffering	config.csaConn.CONSUMPTION_API_USER, 
 							config.csaConn.CONSUMPTION_API_PASSWORD , 
 							baseUrl,
 							xAuthToken, 
 							"CSATesterOffering",
 							"SIMPLE_SYSTEM"
 							"90d9650a36988e5d0136988f03ab000f"
-	.then log 			
+	.then (d) ->
+		log JSON.stringify d 			
 
 
