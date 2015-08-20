@@ -55,10 +55,18 @@ function getRandomInt(min, max) {
 // 	});
 // }
 
+csautils.lookupSubscription = function (username, password , baseUrl ,xAuthToken , subName , categoryName , catalogId) {
+	log("lookup sub")
+	return lookup (username, password , baseUrl ,xAuthToken , "subscription" , subName , categoryName, catalogId)
+}
 
 csautils.lookupOffering = function (username, password , baseUrl ,xAuthToken , offeringName , categoryName , catalogNameOrId) {
-	return new Promise(function(resolve, reject){
+	return lookup (username, password , baseUrl ,xAuthToken , "offering" , offeringName , categoryName, catalogNameOrId)
+}
 
+function lookup (username, password , baseUrl ,xAuthToken , type , name , categoryName, catalogNameOrId) {
+	return new Promise(function(resolve, reject){
+		debugger
 		var catalogId = ""
 		var catalogName = ""
         if (catalogNameOrId.match(/^[0-9A-Fa-f]+$/)) {
@@ -69,47 +77,53 @@ csautils.lookupOffering = function (username, password , baseUrl ,xAuthToken , o
 
 		var options = {
 			rejectUnauthorized: false,
-			url: baseUrl + 'csa/api/mpp/mpp-offering/filter' ,
+			url: baseUrl + 'csa/api/mpp/mpp-'+  type +'/filter' ,
 			headers: getAuthHeader(username , password , xAuthToken),
 			json: true,
 			body: {
-				"name": offeringName,
+				"name": name,
 				"category":categoryName
 			}
 		}
 
 		return postHttpRequest(options)
 		.then(
-			function(offeringList){
-				if (offeringList["@total_results"] === 0) {
-					reject("No results were returned from offering Id query for "+ offeringName)
+			function(itemList){
+				if (itemList["@total_results"] === 0) {
+					reject("No results were returned from query for "+ name)
 				} else {
 
-					function doesOfferingMatch(offering) {
-						return (
-							(offering.displayName === offeringName) 
-							&& 
-							(
-							(offering.catalogId === catalogId) || 
-							(offering.catalogName === catalogName) 
+					function doesItemMatch(nameProp) {
+						return function(item){
+							return (
+								(item[nameProp] === name) 
+								&& 
+								(
+								(item.catalogId === catalogId) || 
+								(item.catalogName === catalogName) 
+								)
 							)
-						)
+						}
+
 					}
 					debugger;
-					var myOffering  = _.find(offeringList.members, doesOfferingMatch);
+					var typeToNameProp = {
+						"offering":"displayName",
+						"subscription":"name"
+					}
+					var myItem  = _.find(itemList.members, doesItemMatch(typeToNameProp[type]));
 								
-					if (typeof myOffering == "undefined") {
-						reject ("An offering was found, but it was in a different catalog to the one specified." )
+					if (typeof myItem == "undefined") {
+						reject ("An item was found, but it was in a different catalog to the one specified." )
 					} else {
-						resolve(myOffering)
+						resolve(myItem)
 					}
 				}
 			}
 			,function(e){
-				reject("problem looking up offering ID: "+ e)
+				reject("problem looking up item ID: "+ e)
 			}
 		)
-
 	})
 }
 
@@ -117,7 +131,7 @@ csautils.lookupOffering = function (username, password , baseUrl ,xAuthToken , o
 csautils.loginAndGetToken =  function (baseUrl , credentialData ,IdmCallOptions) {
 
 	return new Promise(function(resolve, reject) {
-		log('Authenticating...');
+		console.log('Authenticating...');
 		rest.postJson(baseUrl + 'idm-service/v2.0/tokens/', credentialData ,IdmCallOptions )
 		.spread(
 			function(data){
