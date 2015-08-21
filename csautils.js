@@ -16,47 +16,8 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
 
-// This is commented out because the method that requires it needs admin access. will look again later.
-// csautils.lookupCatalogId = function (username, password , baseUrl ,xAuthToken , catalogName) {
-// 	return new Promise(function(resolve, reject){
-// 		var options = {
-// 			rejectUnauthorized: false,
-// 			url: baseUrl + "csa/api/catalog/filter" ,
-// 			headers: getAuthHeader(username , password , xAuthToken),
-// 			json: true,
-// 			body: {
-// 				state: "Active"
-// 			}
-// 		};
-// 		return postHttpRequest(options)
-// 		.then(
-// 			function(catalogList){
-// 				debugger;
-// 				var selfRef = _.result(_.find(catalogList.members, function(cat) {
-// 					return cat.name === catalogName;
-// 				}), '@self')
-				
-// 				if (typeof selfRef == "undefined") {
-// 					reject ("There were no catalogs with the name " + catalogName)
-// 				}
-
-// 				catalogId = selfRef.split('/')[4]
-
-// 				if (catalogId.match(/^[0-9A-Fa-f]+$/)) {
-// 					resolve(catalogId)
-// 				} else {
-// 					reject("the catalog ID returned was invalid: " + catalogId)
-// 				}
-// 			}
-// 			,function(e){
-// 				reject("problem looking up catalog ID: "+ e)
-// 			}
-// 		)
-// 	});
-// }
-
 csautils.lookupSubscription = function (username, password , baseUrl ,xAuthToken , subName , categoryName , catalogId) {
-	log("lookup sub")
+	log("lookup sub: " + [subName , categoryName , catalogId].join("-"))
 	return lookup (username, password , baseUrl ,xAuthToken , "subscription" , subName , categoryName, catalogId)
 }
 
@@ -126,7 +87,6 @@ function lookup (username, password , baseUrl ,xAuthToken , type , name , catego
 		)
 	})
 }
-
 
 csautils.loginAndGetToken =  function (baseUrl , credentialData ,IdmCallOptions) {
 
@@ -235,7 +195,6 @@ function buildRequestOptions(offeringDoc , newInputData) {
     })
 }
 
-
 function log(prefix){
 	return function(data) {
 		var result = "";
@@ -258,7 +217,7 @@ function getAuthHeader(username , password , xAuthToken) {
 	}
 }
 
-function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject , desc , catalogId){
+function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject , desc , catalogId , action , objectId){
 	return function(){
 		return new Promise(function(resolve, reject) {
 			log(desc);
@@ -286,11 +245,14 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 					var reqId = JSON.parse(body).id;
 					if (typeof reqId !== "undefined") {
 						log('  request ' +chalk.green('sent') +': ' + desc + ' - Request ID:' + reqId )
-						resolve({
+						var result = {
 							reqId: reqId , 
 							catalogId: catalogId,
 							subName: requestObject.subscriptionName
-						} );
+						}
+						debugger;
+						if (action = "MODIFY_SUBSCRIPTION") result.subId = objectId
+						resolve(result);
 					} else {
 						var resp = JSON.parse(httpResponse.body);
 						reject(resp.messageKey + " - " + resp.description);
@@ -392,7 +354,7 @@ csautils.submitRequest = function (username, password, action , baseUrl , object
 			fields: subOptions ,
 			action: action
 		}		
-		return sendSubscriptionRequest(username, password, subscriptionRequestUrl, xAuthToken, subRequestDetails , desc , catalogId)()
+		return sendSubscriptionRequest(username, password, subscriptionRequestUrl, xAuthToken, subRequestDetails , desc , catalogId , action , objectId)()
 	}
 }
 
@@ -420,12 +382,19 @@ csautils.order = function  (username, password, xAuthToken , baseUrl , catalogNa
     })
 }
 
-csautils.modify = function  (username, password, xAuthToken , baseUrl , catalogName, categoryName , offeringName , newInputData , subName ) {
-	var subscriptionUrl = baseUrl + 'csa/api/mpp/mpp-subscription/' + subId + '/modify';
-	getCsaData (username, password, xAuthToken , subscriptionUrl )
-    .then(function(subData){
+csautils.modify = function  (username, password, xAuthToken , baseUrl, catalogId, categoryName, subName, newInputData) {
+	log ('start mod')
+	return csautils.lookupSubscription (username, password , baseUrl ,xAuthToken , subName , categoryName , catalogId)
+	.then (function(subscriptionSearchResult){
+		log ("got search result")
+		var subscriptionModifyUrl = baseUrl + 'csa/api/mpp/mpp-subscription/' + subscriptionSearchResult.id + '/modify';
+		return getCsaData (username, password, xAuthToken , subscriptionModifyUrl )()
+	})
+    .then(function(subscription){
+    	log("got sub")
     	debugger;
-    	return csautils.submitRequestAndWaitForActiveSub(username, password, "MODIFY_SUBSCRIPTION" , baseUrl , offering.id , offering.catalogId, categoryName, offering , newInputData ,  subName , xAuthToken )
+    	log([username, password, "MODIFY_SUBSCRIPTION" , baseUrl , subscription.id , catalogId, categoryName, subscription , newInputData ,  subName].join(" - "))
+    	return csautils.submitRequestAndWaitForActiveSub(username, password, "MODIFY_SUBSCRIPTION" , baseUrl , subscription.id , catalogId, categoryName, subscription , newInputData ,  subName , xAuthToken )()
     })
 }
 
@@ -440,7 +409,6 @@ function getCsaData (username, password, xAuthToken , url ){
 		return getHttpRequest(options)	
 	}
 }
-
 
 csautils.submitRequestAndWaitForActiveSub = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
 	return function(){
@@ -498,6 +466,9 @@ function httpRequest(options) {
 csautils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken) {
 	return function(req){
 
+		if (typeof req.subId !== "undefined") return Promise.resolve (req)
+
+		debugger;
 		var options = {
 			rejectUnauthorized: false,
 			url: baseUrl + 'csa/api/mpp/mpp-subscription/filter?page-size=1000' ,
@@ -575,7 +546,7 @@ function project(table, keys) {
 	return _.map(table, function(obj) {
 		return _.pick.apply(null, construct(obj, keys)); 
 	});
-};
+}
 
 function arrayify(value) {
 	return _.flatten([value,[]]);
