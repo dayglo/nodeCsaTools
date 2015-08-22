@@ -9,15 +9,21 @@ chalk = require('chalk');
 _ = require('lodash');
 
 csautils = {}
-log = console.log
-//log = function(){}
+
+log = function(text,color){
+	if (color){
+		text = chalk[color](text)
+	}
+    var date = new Date().toJSON()
+    var logText = "[" + date + "] " + text
+    console.log (logText)
+}
 
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
 
 csautils.lookupSubscription = function (username, password , baseUrl ,xAuthToken , subName , categoryName , catalogId) {
-	log("lookup sub: " + [subName , categoryName , catalogId].join("-"))
 	return lookup (username, password , baseUrl ,xAuthToken , "subscription" , subName , categoryName, catalogId)
 }
 
@@ -27,7 +33,8 @@ csautils.lookupOffering = function (username, password , baseUrl ,xAuthToken , o
 
 function lookup (username, password , baseUrl ,xAuthToken , type , name , categoryName, catalogNameOrId) {
 	return new Promise(function(resolve, reject){
-		debugger
+		
+		log ("lookup " + type)
 		var catalogId = ""
 		var catalogName = ""
         if (catalogNameOrId.match(/^[0-9A-Fa-f]+$/)) {
@@ -67,7 +74,7 @@ function lookup (username, password , baseUrl ,xAuthToken , type , name , catego
 						}
 
 					}
-					debugger;
+					;
 					var typeToNameProp = {
 						"offering":"displayName",
 						"subscription":"name"
@@ -250,8 +257,8 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 							catalogId: catalogId,
 							subName: requestObject.subscriptionName
 						}
-						debugger;
-						if (action = "MODIFY_SUBSCRIPTION") result.subId = objectId
+						;
+						if (action === "MODIFY_SUBSCRIPTION") result.subId = objectId
 						resolve(result);
 					} else {
 						var resp = JSON.parse(httpResponse.body);
@@ -328,6 +335,7 @@ function getRequestStatus(username, password, baseUrl, xAuthToken ) {
 function getSubStatus(username, password, baseUrl, xAuthToken ) {
 	return function(reqData){
 
+		;
 		var desc = "    getting status of subscription " + reqData.subId;
 		log(desc);
 
@@ -341,19 +349,32 @@ function getSubStatus(username, password, baseUrl, xAuthToken ) {
 	}
 }
 
-csautils.submitRequest = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
+csautils.submitRequest = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken , serviceActionSubscriptionId) {
 	return function(){
 		var desc = ["submitting" , action , "request for sub: " , subName].join(' ');
 		var subscriptionRequestUrl = baseUrl + 'csa/api/mpp/mpp-request/' + objectId + '?catalogId=' + catalogId;		
 		var subOptions = buildRequestOptions(offeringData , newInputData ).fields  
-
+		debugger;
 		var subRequestDetails = {
 			categoryName: categoryName,
 			subscriptionName: subName,
 			startDate:  moment().format('YYYY-MM-DDTHH:mm:ss') + '.000Z',
 			fields: subOptions ,
 			action: action
-		}		
+		}	
+
+		if  (
+				(action != "ORDER") &&
+			    (action != "MODIFY_SUBSCRIPTION") &&
+			    (action != "CANCEL") 
+		    )
+		{
+			subRequestDetails.subscriptionId = serviceActionSubscriptionId;
+			delete subRequestDetails.subscriptionName;
+			delete subRequestDetails.categoryName;
+			delete subRequestDetails.startDate;
+		}
+
 		return sendSubscriptionRequest(username, password, subscriptionRequestUrl, xAuthToken, subRequestDetails , desc , catalogId , action , objectId)()
 	}
 }
@@ -373,29 +394,54 @@ csautils.submitRequestAndWait = function (username, password, action , baseUrl ,
 	}
 }
 
-
 csautils.order = function  (username, password, xAuthToken , baseUrl , catalogName, categoryName , offeringName , newInputData , subName ) {
 	return csautils.lookupOffering (username, password , baseUrl ,xAuthToken , offeringName , categoryName , catalogName)
     .then(function(offering){
-    	debugger;
+    	;
     	return csautils.submitRequestAndWaitForActiveSub(username, password, "ORDER" , baseUrl , offering.id , offering.catalogId, categoryName, offering , newInputData ,  subName , xAuthToken )()
     })
 }
 
 csautils.modify = function  (username, password, xAuthToken , baseUrl, catalogId, categoryName, subName, newInputData) {
-	log ('start mod')
 	return csautils.lookupSubscription (username, password , baseUrl ,xAuthToken , subName , categoryName , catalogId)
 	.then (function(subscriptionSearchResult){
-		log ("got search result")
 		var subscriptionModifyUrl = baseUrl + 'csa/api/mpp/mpp-subscription/' + subscriptionSearchResult.id + '/modify';
 		return getCsaData (username, password, xAuthToken , subscriptionModifyUrl )()
 	})
     .then(function(subscription){
-    	log("got sub")
-    	debugger;
+    	;
     	log([username, password, "MODIFY_SUBSCRIPTION" , baseUrl , subscription.id , catalogId, categoryName, subscription , newInputData ,  subName].join(" - "))
     	return csautils.submitRequestAndWaitForActiveSub(username, password, "MODIFY_SUBSCRIPTION" , baseUrl , subscription.id , catalogId, categoryName, subscription , newInputData ,  subName , xAuthToken )()
     })
+}
+
+csautils.control = function  (username, password, xAuthToken , baseUrl, catalogId, categoryName, subName, componentName, actionName) {
+	log("lookup sub")
+	var mySubscriptionId = ""
+	var subscriptionData = {}
+	
+	return csautils.lookupSubscription (username, password , baseUrl ,xAuthToken , subName , categoryName , catalogId)
+	.then (function(subscriptionSearchResult){
+		log("got sub search result")
+		mySubscriptionId = subscriptionSearchResult.id
+		var subscriptionUrl = baseUrl + 'csa/api/mpp/mpp-subscription/' + mySubscriptionId
+		return getCsaData (username, password, xAuthToken , subscriptionUrl )()
+	})
+	.then (function(subscription){
+		log("got sub")
+		subscriptionData = subscription;
+		var instanceUrl = baseUrl + 'csa/api/mpp/mpp-instance/' + subscription.instanceId + "?catalogId=" + catalogId
+		return getCsaData (username, password, xAuthToken , instanceUrl )()
+	})
+	.then (function(componentModel){
+		log("got component model");
+		    	;
+		var serviceActionDetails = getControlActionNameFromComponentModel (componentModel, componentName, actionName)
+		serviceActionName = serviceActionDetails.serviceActionName;
+		componentId = serviceActionDetails.componentId;
+		debugger
+    	return csautils.submitRequestAndWaitForActiveSub(username, password, serviceActionName , baseUrl , componentId , catalogId, categoryName, subscriptionData , {}           ,  subName , xAuthToken , mySubscriptionId)()
+    })                                             
 }
 
 function getCsaData (username, password, xAuthToken , url ){
@@ -410,9 +456,32 @@ function getCsaData (username, password, xAuthToken , url ){
 	}
 }
 
-csautils.submitRequestAndWaitForActiveSub = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
+function getControlActionNameFromComponentModel (componentModel ,componentDisplayName, serviceActionDisplayName){
+	try {
+
+		;
+		var componentId = _.result(_.find(componentModel.components , function(component) {return component.displayName == componentDisplayName}), "id")
+
+		var component = _.find(componentModel.components , function(component) {return component.displayName == componentDisplayName})
+		var serviceActionName = _.result(_.find(component.serviceAction, function (action) {return action.displayName == serviceActionDisplayName}), 'name')
+		
+		if (typeof serviceActionName !== 'undefined'){
+			return {serviceActionName : serviceActionName , componentId: componentId}
+		} 
+		else {
+			log ('couldnt find the control action name from displayname '+ serviceActionDisplayName)
+			throw ('couldnt find the control action name from displayname '+ serviceActionDisplayName)
+		}
+	}
+	catch (e) {
+		log("there was a problem gathering control action details: " + e)
+		throw (e)
+	}
+}
+
+csautils.submitRequestAndWaitForActiveSub = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken , serviceActionSubscriptionId) {
 	return function(){
-		return csautils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken )()
+		return csautils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken , serviceActionSubscriptionId )()
 		.then(pollRequest(username, password, baseUrl, xAuthToken , 20))
 		.then(csautils.getSubIdFromRequest(username, password, baseUrl, xAuthToken ))
 		.then(pollSub(username, password, baseUrl, xAuthToken , 20))
@@ -466,9 +535,10 @@ function httpRequest(options) {
 csautils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken) {
 	return function(req){
 
+		debugger
 		if (typeof req.subId !== "undefined") return Promise.resolve (req)
 
-		debugger;
+		;
 		var options = {
 			rejectUnauthorized: false,
 			url: baseUrl + 'csa/api/mpp/mpp-subscription/filter?page-size=1000' ,
@@ -624,7 +694,7 @@ csautils.createSubscriptionDeleter = function(username, password , baseUrl ,xAut
 
 		return Promise.all(
 			input.map(function(sub){
-				debugger;
+				;
 				log(["      deleting sub" , sub.subName].join(' '))
 				options.url = baseUrl + 'csa/api/mpp/mpp-subscription/' + sub.requestObjectId;
 				return deleteHttpRequest(options)
