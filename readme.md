@@ -131,14 +131,14 @@ login
 		"My redhat server",
 		{},
 	)
-.then(function(){
+).then(function(){
 	return hpcsa.modify	(
 		"90d9650a36988e5d0136988f03ab000f",
 		"SIMPLE_SYSTEM",
 		"My redhat server",
 		{"Compute Class": "Small"}
     ) 
-.then(function(){
+).then(function(){
 	return hpcsa.cancel (	
 		"90d9650a36988e5d0136988f03ab000f",
 		"SIMPLE_SYSTEM",
