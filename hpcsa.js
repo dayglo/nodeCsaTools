@@ -95,8 +95,12 @@ function lookup (type , name , categoryName, catalogNameOrId) {
 	})
 }
 
-csautils.loginAndGetToken =  function (baseUrl , CONSUMPTION_API_USER , CONSUMPTION_API_PASSWORD , CONSUMPTION_API_TENANT, IDM_TRANSPORT_USER , IDM_TRANSPORT_PASSWORD , REJECT_UNAUTHORIZED) {
+csautils.login =  function (baseUrl , CONSUMPTION_API_USER , CONSUMPTION_API_PASSWORD , CONSUMPTION_API_TENANT, IDM_TRANSPORT_USER , IDM_TRANSPORT_PASSWORD , REJECT_UNAUTHORIZED) {
 	return new Promise(function(resolve, reject) {
+
+		if (baseUrl.substr(baseUrl.length - 1) !== '/'){
+			baseUrl += "/"
+		}
 
 		csautils.baseUrl = baseUrl
 
@@ -365,7 +369,6 @@ function getSubStatus() {
 csautils.order = function  (catalogName, categoryName , offeringName , newInputData , subName ) {
 	return csautils.lookupOffering (offeringName , categoryName , catalogName)
     .then(function(offering){
-    	;
     	return csautils.submitRequestAndWaitForSub("ORDER" , offering.id , offering.catalogId, categoryName, offering , newInputData ,  subName )()
     })
 }

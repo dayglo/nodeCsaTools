@@ -9,14 +9,16 @@ baseUrl = config.csaConn.CSA_URI + "/";
 log = (text) -> 
 	console.log text
 
-hpcsa.loginAndGetToken baseUrl , config.csaConn.credentialData ,config.csaConn.IdmCallOptions
+hpcsa.loginAndGetToken 	baseUrl , 
+						config.csaConn.CONSUMPTION_API_USER, 
+						config.csaConn.CONSUMPTION_API_PASSWORD ,
+						config.csaConn.CONSUMPTION_API_TENANT ,
+						config.csaConn.IDM_TRANSPORT_USER ,
+						config.csaConn.IDM_TRANSPORT_PASSWORD ,
+						config.csaConn.REJECT_UNAUTHORIZED 
 .then (xAuthToken) ->
 
-	hpcsa.order				config.csaConn.CONSUMPTION_API_USER, 
-							config.csaConn.CONSUMPTION_API_PASSWORD , 
-							xAuthToken, 
-							baseUrl,
-							"Global Shared Catalog"
+	hpcsa.order				"Global Shared Catalog"
 							"SIMPLE_SYSTEM"
 							"CSATesterOffering",
 							{},
