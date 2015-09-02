@@ -1,8 +1,8 @@
 {
   "name": "hpcsa",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "hp csa client library",
-  "main": "csautils.js",
+  "main": "hpcsa.js",
   "dependencies": {
     "adm-zip": "0.4.7",
     "chalk": "1.0.0",
@@ -10,7 +10,7 @@
     "glob": "5.0.1",
     "lodash": "^3.6.0",
     "minimist": "1.1.1",
-    "moment": "2.9.0",
+    "moment": "^2.9.0",
     "ncp": "2.0.0",
     "node-uuid": "1.4.3",
     "prfun": "1.0.2",
@@ -23,7 +23,7 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no tests yet.\" && exit 1"
+    "test": "coffee runAllTests.coffee"
   },
   "author": "George Cairns",
   "license": "ISC"
