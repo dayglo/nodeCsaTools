@@ -278,7 +278,7 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 	}
 }
 
-function pollRequest(username, password, baseUrl, xAuthToken , retry) {  
+function pollRequest(username, password, baseUrl, xAuthToken , retry, goodStatuses , badStatuses) {  
 	return function(reqData){
 		retry--;
 		if(retry === 0) {
@@ -288,20 +288,24 @@ function pollRequest(username, password, baseUrl, xAuthToken , retry) {
 			return Promise.resolve(reqData)
 			.then(getRequestStatus(username, password, baseUrl, xAuthToken ))
 			.then(function(requestData) {
-				if(requestData.requestState === 'REJECTED')
+				if( _.includes(badStatuses, reqData.status) ) {
 					return Promise.reject("the request " + reqData.reqId + " was " + chalk.red( requestData.requestState) + " by CSA")
-				else if(requestData.requestState === 'COMPLETED') {
+				}
+				else if( _.includes(goodStatuses, reqData.status) ) {
 					return Promise.resolve(reqData);
 				}
 				else
-					return Promise.delay(reqData, getRandomInt(9000,11000) ).then(pollRequest(username, password, baseUrl, xAuthToken , retry));
+					return Promise.delay(reqData, getRandomInt(9000,11000) ).then(pollRequest(username, password, baseUrl, xAuthToken , retry, goodStatuses , badStatuses));
 			});
 		}
 	}
 }
 
-function pollSub(username, password, baseUrl, xAuthToken , retry) {  
+function pollSub(username, password, baseUrl, xAuthToken , retry , goodStatuses , badStatuses) {  
 	return function(reqData){
+		var desc = "    checking status of sub is " + goodStatuses.join(' or ');
+		log(desc);
+
 		retry--;
 		if(retry === 0) {
 			//log('           timed out request ' + reqData.reqId);
@@ -310,14 +314,15 @@ function pollSub(username, password, baseUrl, xAuthToken , retry) {
 			return Promise.resolve(reqData)
 			.then(getSubStatus(username, password, baseUrl, xAuthToken ))
 			.then(function(subData) {
-				if( (subData.status === 'CANCELLED') || (subData.status === 'TERMINATED') || (subData.status === 'EXPIRED') )
-					return Promise.reject("the request " + reqData.subId + " was " + chalk.red(subData.status) )
-				else if(subData.status === 'ACTIVE') {
+				if( _.includes(badStatuses, subData.status) ) {
+					return Promise.reject("the sub " + reqData.subId + " is " + chalk.red(subData.status) )
+				}
+				else if( _.includes(goodStatuses, subData.status) ) {
 					reqData.subStatus = subData.status
 					return Promise.resolve(reqData);
 				}
 				else
-					return Promise.delay(reqData, getRandomInt(9000,11000) ).then(pollSub(username, password, baseUrl, xAuthToken , retry));
+					return Promise.delay(reqData, getRandomInt(9000,11000) ).then(pollSub(username, password, baseUrl, xAuthToken , retry, goodStatuses , badStatuses));
 			});
 		}
 	}
@@ -341,10 +346,6 @@ function getRequestStatus(username, password, baseUrl, xAuthToken ) {
 
 function getSubStatus(username, password, baseUrl, xAuthToken ) {
 	return function(reqData){
-
-		;
-		var desc = "    getting status of subscription " + reqData.subId;
-		log(desc);
 
 		var options = {
 			rejectUnauthorized: false,
@@ -389,7 +390,7 @@ csautils.submitRequest = function (username, password, action , baseUrl , object
 csautils.submitRequestAndWait = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
 	return function(){
 		return csautils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken )()
-		.then(pollRequest(username, password, baseUrl, xAuthToken , 20))
+		.then(pollRequest(username, password, baseUrl, xAuthToken , 20, ['COMPLETED'] , ['REJECTED']))
 		.then(function(reqData){
 			log(["      request" , reqData.subName , 'was', chalk.green('completed.') , "(requestID:" , reqData.reqId , ')'].join(' '));
 			reqData.requestObjectId = objectId
@@ -405,7 +406,7 @@ csautils.order = function  (username, password, xAuthToken , baseUrl , catalogNa
 	return csautils.lookupOffering (username, password , baseUrl ,xAuthToken , offeringName , categoryName , catalogName)
     .then(function(offering){
     	;
-    	return csautils.submitRequestAndWaitForActiveSub(username, password, "ORDER" , baseUrl , offering.id , offering.catalogId, categoryName, offering , newInputData ,  subName , xAuthToken )()
+    	return csautils.submitRequestAndWaitForSub(username, password, "ORDER" , baseUrl , offering.id , offering.catalogId, categoryName, offering , newInputData ,  subName , xAuthToken )()
     })
 }
 
@@ -425,7 +426,27 @@ csautils.modify = function  (username, password, xAuthToken , baseUrl, catalogId
 	})
     .then(function(subscription){
     	log([username, password, "MODIFY_SUBSCRIPTION" , baseUrl , subscription.id , catalogId, categoryName, subscription , newInputData ,  subName].join(" - "))
-    	return csautils.submitRequestAndWaitForActiveSub(username, password, "MODIFY_SUBSCRIPTION" , baseUrl , subscription.id , catalogId, categoryName, subscription , newInputData ,  subName , xAuthToken )()
+    	return csautils.submitRequestAndWaitForSub(username, password, "MODIFY_SUBSCRIPTION" , baseUrl , subscription.id , catalogId, categoryName, subscription , newInputData ,  subName , xAuthToken )()
+    })
+}
+
+csautils.cancel = function  (username, password, xAuthToken , baseUrl, catalogId, categoryName, subName) {
+
+	var start = {} 
+    if (subName.match(/^.{8}_(.{4}_){3}.{12}$/)) {
+        start = Promise.resolve({id:subName}) 
+    } else {
+    	start = csautils.lookupSubscription (username, password , baseUrl ,xAuthToken , subName , categoryName , catalogId)
+    }
+
+    return start
+	.then (function(subscriptionSearchResult){
+		var subscriptionModifyUrl = baseUrl + 'csa/api/mpp/mpp-subscription/' + subscriptionSearchResult.id
+		return getCsaData (username, password, xAuthToken , subscriptionModifyUrl )()
+	})
+    .then(function(subscription){
+    	log([username, password, "CANCEL" , baseUrl , subscription.id , catalogId, categoryName, subscription , {} ,  subName].join(" - "))
+    	return csautils.submitRequestAndWaitForSub(username, password, "CANCEL" , baseUrl , subscription.id , catalogId, categoryName, subscription , {} ,  subName , xAuthToken )()
     })
 }
 
@@ -461,7 +482,7 @@ csautils.control = function  (username, password, xAuthToken , baseUrl, catalogI
 		serviceActionName = serviceActionDetails.serviceActionName;
 		componentId = serviceActionDetails.componentId;
 		;
-    	return csautils.submitRequestAndWaitForActiveSub(username, password, serviceActionName , baseUrl , componentId , catalogId, categoryName, subscriptionData , {}           ,  subName , xAuthToken , mySubscriptionId)()
+    	return csautils.submitRequestAndWaitForSub(username, password, serviceActionName , baseUrl , componentId , catalogId, categoryName, subscriptionData , {}           ,  subName , xAuthToken , mySubscriptionId)()
     })                                             
 }
 
@@ -500,12 +521,12 @@ function getControlActionNameFromComponentModel (componentModel ,componentDispla
 	}
 }
 
-csautils.submitRequestAndWaitForActiveSub = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken , serviceActionSubscriptionId) {
+csautils.submitRequestAndWaitForSub = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken , serviceActionSubscriptionId, targetState) {
 	return function(){
 		return csautils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken , serviceActionSubscriptionId )()
-		.then(pollRequest(username, password, baseUrl, xAuthToken , 20))
+		.then(pollRequest(username, password, baseUrl, xAuthToken , 20, ['COMPLETED'] , ['REJECTED']))
 		.then(csautils.getSubIdFromRequest(username, password, baseUrl, xAuthToken ))
-		.then(pollSub(username, password, baseUrl, xAuthToken , 20))
+		.then(pollSub(username, password, baseUrl, xAuthToken , 20 , ['ACTIVE'],['CANCELLED','TERMINATED','EXPIRED']))
 		.then(csautils.createRequestDeleter(username, password, baseUrl, xAuthToken ))
 		.then(function(data){
 			reqData = data[0];
