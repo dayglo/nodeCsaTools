@@ -260,7 +260,7 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 							subName: requestObject.subscriptionName
 						}
 						
-						if (action === "MODIFY_SUBSCRIPTION")
+						if ((action === "MODIFY_SUBSCRIPTION") || (action === "CANCEL"))
 							result.subId = objectId
 
 						if (typeof requestObject.subscriptionId !== "undefined")
@@ -280,6 +280,8 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 
 function pollRequest(username, password, baseUrl, xAuthToken , retry, goodStatuses , badStatuses) {  
 	return function(reqData){
+
+
 		retry--;
 		if(retry === 0) {
 			//log('           timed out request ' + reqData.reqId);
@@ -288,10 +290,12 @@ function pollRequest(username, password, baseUrl, xAuthToken , retry, goodStatus
 			return Promise.resolve(reqData)
 			.then(getRequestStatus(username, password, baseUrl, xAuthToken ))
 			.then(function(requestData) {
-				if( _.includes(badStatuses, reqData.status) ) {
+				var desc = "    waiting for status of request " + reqData.reqId + " to be " + goodStatuses.join(' or ') + " [" + requestData.requestState + "]";
+				log(desc);
+				if( _.includes(badStatuses, requestData.requestState) ) {
 					return Promise.reject("the request " + reqData.reqId + " was " + chalk.red( requestData.requestState) + " by CSA")
 				}
-				else if( _.includes(goodStatuses, reqData.status) ) {
+				else if( _.includes(goodStatuses, requestData.requestState) ) {
 					return Promise.resolve(reqData);
 				}
 				else
@@ -303,9 +307,6 @@ function pollRequest(username, password, baseUrl, xAuthToken , retry, goodStatus
 
 function pollSub(username, password, baseUrl, xAuthToken , retry , goodStatuses , badStatuses) {  
 	return function(reqData){
-		var desc = "    checking status of sub is " + goodStatuses.join(' or ');
-		log(desc);
-
 		retry--;
 		if(retry === 0) {
 			//log('           timed out request ' + reqData.reqId);
@@ -314,6 +315,10 @@ function pollSub(username, password, baseUrl, xAuthToken , retry , goodStatuses 
 			return Promise.resolve(reqData)
 			.then(getSubStatus(username, password, baseUrl, xAuthToken ))
 			.then(function(subData) {
+				var desc = "    waiting for status of sub to be " + goodStatuses.join(' or ') + " [" + subData.status + "]";
+				log(desc);
+
+				
 				if( _.includes(badStatuses, subData.status) ) {
 					return Promise.reject("the sub " + reqData.subId + " is " + chalk.red(subData.status) )
 				}
@@ -330,9 +335,6 @@ function pollSub(username, password, baseUrl, xAuthToken , retry , goodStatuses 
 
 function getRequestStatus(username, password, baseUrl, xAuthToken ) {
 	return function(reqData){
-
-		var desc = "    getting status of request " + reqData.reqId;
-		log(desc);
 
 		var options = {
 			rejectUnauthorized: false,
@@ -357,50 +359,7 @@ function getSubStatus(username, password, baseUrl, xAuthToken ) {
 	}
 }
 
-csautils.submitRequest = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken , serviceActionSubscriptionId) {
-	return function(){
-		var desc = ["submitting" , action , "request for sub: " , subName].join(' ');
-		var subscriptionRequestUrl = baseUrl + 'csa/api/mpp/mpp-request/' + objectId + '?catalogId=' + catalogId;		
-		var subOptions = buildRequestOptions(offeringData , newInputData ).fields  
-		;
-		var subRequestDetails = {
-			categoryName: categoryName,
-			subscriptionName: subName,
-			startDate:  moment().format('YYYY-MM-DDTHH:mm:ss') + '.000Z',
-			fields: subOptions ,
-			action: action
-		}	
 
-		if  (
-				(action != "ORDER") &&
-			    (action != "MODIFY_SUBSCRIPTION") &&
-			    (action != "CANCEL") 
-		    )
-		{
-			subRequestDetails.subscriptionId = serviceActionSubscriptionId;
-			//delete subRequestDetails.subscriptionName;
-			delete subRequestDetails.categoryName;
-			delete subRequestDetails.startDate;
-		}
-
-		return sendSubscriptionRequest(username, password, subscriptionRequestUrl, xAuthToken, subRequestDetails , desc , catalogId , action , objectId)()
-	}
-}
-
-csautils.submitRequestAndWait = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
-	return function(){
-		return csautils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken )()
-		.then(pollRequest(username, password, baseUrl, xAuthToken , 20, ['COMPLETED'] , ['REJECTED']))
-		.then(function(reqData){
-			log(["      request" , reqData.subName , 'was', chalk.green('completed.') , "(requestID:" , reqData.reqId , ')'].join(' '));
-			reqData.requestObjectId = objectId
-			return Promise.resolve(reqData);
-		},function(err){
-			log("      request for " + action + " on " + subName + chalk.red(' failed') + ': ' + err);
-			return(Promise.reject(err))
-		});
-	}
-}
 
 csautils.order = function  (username, password, xAuthToken , baseUrl , catalogName, categoryName , offeringName , newInputData , subName ) {
 	return csautils.lookupOffering (username, password , baseUrl ,xAuthToken , offeringName , categoryName , catalogName)
@@ -445,8 +404,8 @@ csautils.cancel = function  (username, password, xAuthToken , baseUrl, catalogId
 		return getCsaData (username, password, xAuthToken , subscriptionModifyUrl )()
 	})
     .then(function(subscription){
-    	log([username, password, "CANCEL" , baseUrl , subscription.id , catalogId, categoryName, subscription , {} ,  subName].join(" - "))
-    	return csautils.submitRequestAndWaitForSub(username, password, "CANCEL" , baseUrl , subscription.id , catalogId, categoryName, subscription , {} ,  subName , xAuthToken )()
+    	log([username, password, "CANCEL_SUBSCRIPTION" , baseUrl , subscription.id , catalogId, categoryName, subscription , {} ,  subName].join(" - "))
+    	return csautils.submitRequestAndWaitForSub(username, password, "CANCEL_SUBSCRIPTION" , baseUrl , subscription.id , catalogId, categoryName, subscription , {} ,  subName , xAuthToken , subscription.id )()
     })
 }
 
@@ -521,23 +480,78 @@ function getControlActionNameFromComponentModel (componentModel ,componentDispla
 	}
 }
 
-csautils.submitRequestAndWaitForSub = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken , serviceActionSubscriptionId, targetState) {
+csautils.submitRequest = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken , serviceActionSubscriptionId) {
 	return function(){
-		return csautils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken , serviceActionSubscriptionId )()
+		var desc = ["submitting" , action , "request for sub: " , subName].join(' ');
+		var subscriptionRequestUrl = baseUrl + 'csa/api/mpp/mpp-request/' + objectId + '?catalogId=' + catalogId;		
+		var subOptions = buildRequestOptions(offeringData , newInputData ).fields  
+		;
+		var subRequestDetails = {
+			categoryName: categoryName,
+			subscriptionName: subName,
+			startDate:  moment().format('YYYY-MM-DDTHH:mm:ss') + '.000Z',
+			fields: subOptions ,
+			action: action
+		}	
+
+		if  (
+				(action != "ORDER") &&
+			    (action != "MODIFY_SUBSCRIPTION") &&
+			    (action != "CANCEL") 
+		    )
+		{
+			subRequestDetails.subscriptionId = serviceActionSubscriptionId;
+			//delete subRequestDetails.subscriptionName;
+			delete subRequestDetails.categoryName;
+			delete subRequestDetails.startDate;
+		}
+
+		return sendSubscriptionRequest(username, password, subscriptionRequestUrl, xAuthToken, subRequestDetails , desc , catalogId , action , objectId)()
+	}
+}
+
+csautils.submitRequestAndWait = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken ) {
+	return function(){
+		return csautils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken )()
 		.then(pollRequest(username, password, baseUrl, xAuthToken , 20, ['COMPLETED'] , ['REJECTED']))
+		.then(function(reqData){
+			log(["      request" , reqData.subName , 'was', chalk.green('completed.') , "(requestID:" , reqData.reqId , ')'].join(' '));
+			reqData.requestObjectId = objectId
+			return Promise.resolve(reqData);
+		},function(err){
+			log("      request for " + action + " on " + subName + chalk.red(' failed') + ': ' + err);
+			return(Promise.reject(err))
+		});
+	}
+}
+
+csautils.submitRequestAndWaitForSub = function (username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken , subscriptionId) {
+	return function() {
+
+		var goodRequestStatuses = ['COMPLETED'];
+		var badRequestStatuses = ['REJECTED'];
+		var goodSubStatuses = ['ACTIVE'];
+		var badSubStatuses = ['CANCELLED','TERMINATED','EXPIRED'];
+
+		if (action == 'CANCEL_SUBSCRIPTION') {
+			goodSubStatuses = ['CANCELLED'];
+			badSubStatuses = ['TERMINATED','EXPIRED'];
+		}
+
+		return csautils.submitRequest(username, password, action , baseUrl , objectId , catalogId, categoryName, offeringData , newInputData , subName , xAuthToken , subscriptionId )()
+		.then(pollRequest(username, password, baseUrl, xAuthToken , 20, goodRequestStatuses , badRequestStatuses))
 		.then(csautils.getSubIdFromRequest(username, password, baseUrl, xAuthToken ))
-		.then(pollSub(username, password, baseUrl, xAuthToken , 20 , ['ACTIVE'],['CANCELLED','TERMINATED','EXPIRED']))
+		.then(pollSub(username, password, baseUrl, xAuthToken , 20 , goodSubStatuses, badSubStatuses))
 		.then(csautils.createRequestDeleter(username, password, baseUrl, xAuthToken ))
 		.then(function(data){
 			reqData = data[0];
-			log(["      request" , reqData.subName , 'was', chalk.green('successfully fulfilled.') , "(requestID:" , reqData.reqId , "subscriptionId:" , reqData.subId , ')'].join(' '));
-			;
+			log(["      request for", action, "on" , reqData.subName , 'was', chalk.green('successful.') , "(requestID:" , reqData.reqId , "subscriptionId:" , reqData.subId , ')'].join(' '));
 			reqData.requestObjectId = objectId
 			return Promise.resolve(reqData);
 		},function(err){
 			log("      request for " + action + " on " + subName  + chalk.red(' failed') + ': ' + err);
 			return(Promise.reject(err))
-		});
+		})
 	}
 }
 
@@ -577,11 +591,10 @@ function httpRequest(options) {
 
 csautils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken) {
 	return function(req){
-
 		
+		debugger;
 		if (typeof req.subId !== "undefined") return Promise.resolve (req)
 
-		;
 		var options = {
 			rejectUnauthorized: false,
 			url: baseUrl + 'csa/api/mpp/mpp-subscription/filter?page-size=1000' ,
@@ -595,8 +608,6 @@ csautils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken
 
 		return postHttpRequest(options)
 		.then(function(candidateSubscriptionList){
-			;
-
 			return Promise.all(
 				candidateSubscriptionList.members.map(function(sub){
 					log(["        checking sub", sub.name , "for the request"].join(' '))

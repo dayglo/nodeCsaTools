@@ -2,9 +2,11 @@ hpcsa = require './csautils.js'
 config = require './config.js'
 moment = require 'moment'
 
+newSubName = moment().format('YYYY-MM-DDTHH:mm:ss') + ' autotest'
+
 baseUrl = config.csaConn.CSA_URI + "/";
 
-newSubName = moment().format('YYYY-MM-DDTHH:mm:ss') + ' autotest'
+
 
 log = (text) -> 
 	console.log text
@@ -12,18 +14,43 @@ log = (text) ->
 hpcsa.loginAndGetToken baseUrl , config.csaConn.credentialData ,config.csaConn.IdmCallOptions
 .then (xAuthToken) ->
 	log "================================================="
-	log "initiating order"
+	log "initiating offering lookup"
 	log "================================================="
 
-	hpcsa.order		config.csaConn.CONSUMPTION_API_USER, 
-					config.csaConn.CONSUMPTION_API_PASSWORD , 
-					xAuthToken, 
-					baseUrl,
-					"Global Shared Catalog"
-					"SIMPLE_SYSTEM"
-					"CSATesterOffering",
-					{},
-					newSubName
+	hpcsa.lookupOffering	config.csaConn.CONSUMPTION_API_USER, 
+							config.csaConn.CONSUMPTION_API_PASSWORD , 
+							baseUrl,
+							xAuthToken, 
+							"CSATesterOffering",
+							"SIMPLE_SYSTEM"
+							"Global Shared Catalog"
+	.then (d) ->
+		log JSON.stringify d 	
+	.then ->
+		hpcsa.lookupOffering	config.csaConn.CONSUMPTION_API_USER, 
+							config.csaConn.CONSUMPTION_API_PASSWORD , 
+							baseUrl,
+							xAuthToken, 
+							"CSATesterOffering",
+							"SIMPLE_SYSTEM"
+							"90d9650a36988e5d0136988f03ab000f"
+	.then (d) ->
+		log JSON.stringify d 			
+
+	.then () ->
+		log "================================================="
+		log "initiating order"
+		log "================================================="
+
+		hpcsa.order		config.csaConn.CONSUMPTION_API_USER, 
+						config.csaConn.CONSUMPTION_API_PASSWORD , 
+						xAuthToken, 
+						baseUrl,
+						"Global Shared Catalog"
+						"SIMPLE_SYSTEM"
+						"CSATesterOffering",
+						{},
+						newSubName
 	.then (d) ->
 		log JSON.stringify d 
 		log "done order"
