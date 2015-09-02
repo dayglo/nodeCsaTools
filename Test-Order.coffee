@@ -1,5 +1,8 @@
 hpcsa = require './csautils.js'
 config = require('./config.js');
+moment = require 'moment'
+
+newSubName = moment().format('YYYY-MM-DDTHH:mm:ss') + ' autotest'
 
 baseUrl = config.csaConn.CSA_URI + "/";
 
@@ -17,7 +20,7 @@ hpcsa.loginAndGetToken baseUrl , config.csaConn.credentialData ,config.csaConn.I
 							"SIMPLE_SYSTEM"
 							"CSATesterOffering",
 							{},
-							"Test subscription"
+							newSubName
 	.then (d) ->
 		log JSON.stringify d 	
 	

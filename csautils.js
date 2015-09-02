@@ -54,7 +54,7 @@ function lookup (username, password , baseUrl ,xAuthToken , type , name , catego
 			}
 		}
 
-		return postHttpRequest(options)
+		postHttpRequest(options)
 		.then(
 			function(itemList){
 				if (itemList["@total_results"] === 0) {
@@ -229,6 +229,8 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 		return new Promise(function(resolve, reject) {
 			log(desc);
 
+			;
+
 			var formData = {
 				requestForm : JSON.stringify(requestObject)
 			};
@@ -257,8 +259,13 @@ function sendSubscriptionRequest(username,password,url,xAuthToken, requestObject
 							catalogId: catalogId,
 							subName: requestObject.subscriptionName
 						}
-						;
-						if (action === "MODIFY_SUBSCRIPTION") result.subId = objectId
+						
+						if (action === "MODIFY_SUBSCRIPTION")
+							result.subId = objectId
+
+						if (typeof requestObject.subscriptionId !== "undefined")
+							result.subId = requestObject.subscriptionId
+
 						resolve(result);
 					} else {
 						var resp = JSON.parse(httpResponse.body);
@@ -354,7 +361,7 @@ csautils.submitRequest = function (username, password, action , baseUrl , object
 		var desc = ["submitting" , action , "request for sub: " , subName].join(' ');
 		var subscriptionRequestUrl = baseUrl + 'csa/api/mpp/mpp-request/' + objectId + '?catalogId=' + catalogId;		
 		var subOptions = buildRequestOptions(offeringData , newInputData ).fields  
-		debugger;
+		;
 		var subRequestDetails = {
 			categoryName: categoryName,
 			subscriptionName: subName,
@@ -370,7 +377,7 @@ csautils.submitRequest = function (username, password, action , baseUrl , object
 		    )
 		{
 			subRequestDetails.subscriptionId = serviceActionSubscriptionId;
-			delete subRequestDetails.subscriptionName;
+			//delete subRequestDetails.subscriptionName;
 			delete subRequestDetails.categoryName;
 			delete subRequestDetails.startDate;
 		}
@@ -403,13 +410,20 @@ csautils.order = function  (username, password, xAuthToken , baseUrl , catalogNa
 }
 
 csautils.modify = function  (username, password, xAuthToken , baseUrl, catalogId, categoryName, subName, newInputData) {
-	return csautils.lookupSubscription (username, password , baseUrl ,xAuthToken , subName , categoryName , catalogId)
+
+	var start = {} 
+    if (subName.match(/^.{8}_(.{4}_){3}.{12}$/)) {
+        start = Promise.resolve({id:subName}) 
+    } else {
+    	start = csautils.lookupSubscription (username, password , baseUrl ,xAuthToken , subName , categoryName , catalogId)
+    }
+
+    return start
 	.then (function(subscriptionSearchResult){
 		var subscriptionModifyUrl = baseUrl + 'csa/api/mpp/mpp-subscription/' + subscriptionSearchResult.id + '/modify';
 		return getCsaData (username, password, xAuthToken , subscriptionModifyUrl )()
 	})
     .then(function(subscription){
-    	;
     	log([username, password, "MODIFY_SUBSCRIPTION" , baseUrl , subscription.id , catalogId, categoryName, subscription , newInputData ,  subName].join(" - "))
     	return csautils.submitRequestAndWaitForActiveSub(username, password, "MODIFY_SUBSCRIPTION" , baseUrl , subscription.id , catalogId, categoryName, subscription , newInputData ,  subName , xAuthToken )()
     })
@@ -420,8 +434,15 @@ csautils.control = function  (username, password, xAuthToken , baseUrl, catalogI
 	var mySubscriptionId = ""
 	var subscriptionData = {}
 	
-	return csautils.lookupSubscription (username, password , baseUrl ,xAuthToken , subName , categoryName , catalogId)
-	.then (function(subscriptionSearchResult){
+	var start = {} 
+    if (subName.match(/^.{8}_(.{4}_){3}.{12}$/)) {
+        start = Promise.resolve({id:subName}) 
+    } else {
+    	start = csautils.lookupSubscription (username, password , baseUrl ,xAuthToken , subName , categoryName , catalogId)
+    }
+
+    start
+	.then (function(subscriptionSearchResult){		
 		log("got sub search result")
 		mySubscriptionId = subscriptionSearchResult.id
 		var subscriptionUrl = baseUrl + 'csa/api/mpp/mpp-subscription/' + mySubscriptionId
@@ -435,11 +456,11 @@ csautils.control = function  (username, password, xAuthToken , baseUrl, catalogI
 	})
 	.then (function(componentModel){
 		log("got component model");
-		    	;
+
 		var serviceActionDetails = getControlActionNameFromComponentModel (componentModel, componentName, actionName)
 		serviceActionName = serviceActionDetails.serviceActionName;
 		componentId = serviceActionDetails.componentId;
-		debugger
+		;
     	return csautils.submitRequestAndWaitForActiveSub(username, password, serviceActionName , baseUrl , componentId , catalogId, categoryName, subscriptionData , {}           ,  subName , xAuthToken , mySubscriptionId)()
     })                                             
 }
@@ -489,6 +510,7 @@ csautils.submitRequestAndWaitForActiveSub = function (username, password, action
 		.then(function(data){
 			reqData = data[0];
 			log(["      request" , reqData.subName , 'was', chalk.green('successfully fulfilled.') , "(requestID:" , reqData.reqId , "subscriptionId:" , reqData.subId , ')'].join(' '));
+			;
 			reqData.requestObjectId = objectId
 			return Promise.resolve(reqData);
 		},function(err){
@@ -535,7 +557,7 @@ function httpRequest(options) {
 csautils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken) {
 	return function(req){
 
-		debugger
+		
 		if (typeof req.subId !== "undefined") return Promise.resolve (req)
 
 		;
@@ -552,6 +574,7 @@ csautils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken
 
 		return postHttpRequest(options)
 		.then(function(candidateSubscriptionList){
+			;
 
 			return Promise.all(
 				candidateSubscriptionList.members.map(function(sub){
@@ -563,6 +586,7 @@ csautils.getSubIdFromRequest = function(username, password , baseUrl ,xAuthToken
 
 		})
 		.then(function(candidateSubscriptions){
+			;
 			var result = _.result(_.find(candidateSubscriptions, function(sub) {
 				return sub.requestId === req.reqId;
 			}), 'id');
