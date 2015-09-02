@@ -11,29 +11,29 @@ baseUrl = config.csaConn.CSA_URI + "/";
 log = (text) -> 
 	console.log text
 
-hpcsa.loginAndGetToken baseUrl , config.csaConn.credentialData ,config.csaConn.IdmCallOptions
-.then (xAuthToken) ->
+
+hpcsa.loginAndGetToken 	baseUrl , 
+						config.csaConn.CONSUMPTION_API_USER, 
+						config.csaConn.CONSUMPTION_API_PASSWORD ,
+						config.csaConn.CONSUMPTION_API_TENANT ,
+						config.csaConn.IDM_TRANSPORT_USER ,
+						config.csaConn.IDM_TRANSPORT_PASSWORD ,
+						config.csaConn.REJECT_UNAUTHORIZED 
+
+.then () ->
 	log "================================================="
 	log "initiating offering lookup"
 	log "================================================="
 
-	hpcsa.lookupOffering	config.csaConn.CONSUMPTION_API_USER, 
-							config.csaConn.CONSUMPTION_API_PASSWORD , 
-							baseUrl,
-							xAuthToken, 
-							"CSATesterOffering",
+	hpcsa.lookupOffering	"CSATesterOffering",
 							"SIMPLE_SYSTEM"
 							"Global Shared Catalog"
 	.then (d) ->
 		log JSON.stringify d 	
 	.then ->
-		hpcsa.lookupOffering	config.csaConn.CONSUMPTION_API_USER, 
-							config.csaConn.CONSUMPTION_API_PASSWORD , 
-							baseUrl,
-							xAuthToken, 
-							"CSATesterOffering",
-							"SIMPLE_SYSTEM"
-							"90d9650a36988e5d0136988f03ab000f"
+		hpcsa.lookupOffering	"CSATesterOffering",
+								"SIMPLE_SYSTEM",
+								"90d9650a36988e5d0136988f03ab000f"
 	.then (d) ->
 		log JSON.stringify d 			
 
@@ -42,12 +42,8 @@ hpcsa.loginAndGetToken baseUrl , config.csaConn.credentialData ,config.csaConn.I
 		log "initiating order"
 		log "================================================="
 
-		hpcsa.order		config.csaConn.CONSUMPTION_API_USER, 
-						config.csaConn.CONSUMPTION_API_PASSWORD , 
-						xAuthToken, 
-						baseUrl,
-						"Global Shared Catalog"
-						"SIMPLE_SYSTEM"
+		hpcsa.order		"Global Shared Catalog",
+						"SIMPLE_SYSTEM",
 						"CSATesterOffering",
 						{},
 						newSubName
@@ -60,14 +56,10 @@ hpcsa.loginAndGetToken baseUrl , config.csaConn.credentialData ,config.csaConn.I
 		log "================================================="
 		log "initiating modify"
 		log "================================================="
-		hpcsa.modify	config.csaConn.CONSUMPTION_API_USER, 
-						config.csaConn.CONSUMPTION_API_PASSWORD , 
-						xAuthToken, 
-						baseUrl,
-						"90d9650a36988e5d0136988f03ab000f",
+		hpcsa.modify	"90d9650a36988e5d0136988f03ab000f",
 						"SIMPLE_SYSTEM",
 						newSubName,
-						{}
+						{CPU: 5}
 	.then (d) ->
 
 		log JSON.stringify d
@@ -76,15 +68,21 @@ hpcsa.loginAndGetToken baseUrl , config.csaConn.credentialData ,config.csaConn.I
 	.then () ->
 		log "initiating control"
 		log "================================================="
-		hpcsa.control	config.csaConn.CONSUMPTION_API_USER, 
-						config.csaConn.CONSUMPTION_API_PASSWORD , 
-						xAuthToken, 
-						baseUrl,
-						"90d9650a36988e5d0136988f03ab000f",
+		hpcsa.control	"90d9650a36988e5d0136988f03ab000f",
 						"SIMPLE_SYSTEM",
 						newSubName,
 						"Server",
 						"Reboot Server"
 	.then (d) ->
+		log "initiating cancel"
+		log "================================================="
 		log JSON.stringify d
+		hpcsa.cancel		"90d9650a36988e5d0136988f03ab000f",
+							"SIMPLE_SYSTEM",
+							newSubName
+
+	.then (d) ->
+		log JSON.stringify d
+		log "done cancel"
+		log "================================================="
 			
