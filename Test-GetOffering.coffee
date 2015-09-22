@@ -5,7 +5,7 @@ log = (text) ->
 	console.log text
 
 
-hpcsa.login	config.csaConn.CSA_URI  
+hpcsa.login	config.csaConn.CSA_URI,
 			config.csaConn.CONSUMPTION_API_USER, 
 			config.csaConn.CONSUMPTION_API_PASSWORD ,
 			config.csaConn.CONSUMPTION_API_TENANT ,
@@ -24,6 +24,11 @@ hpcsa.login	config.csaConn.CSA_URI
 						 "SIMPLE_SYSTEM",
 						 "90d9650a36988e5d0136988f03ab000f"
 .then (d) ->
-	log JSON.stringify d 			
+	log JSON.stringify d 
 
-
+.then () ->
+	hpcsa.lookupOfferings	"CSA",
+							"SIMPLE_SYSTEM",
+							"Global Shared Catalog"
+.then (d) ->
+	log JSON.stringify d 

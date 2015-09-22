@@ -24,14 +24,18 @@ function getRandomInt(min, max) {
 }
 
 csautils.lookupSubscription = function (subName , categoryName , catalogId) {
-	return lookup ("subscription" , subName , categoryName, catalogId)
+	return lookup ("subscription" , subName , categoryName, catalogId, true)
 }
 
 csautils.lookupOffering = function (offeringName , categoryName , catalogNameOrId) {
-	return lookup ("offering" , offeringName , categoryName, catalogNameOrId)
+	return lookup ("offering" , offeringName , categoryName, catalogNameOrId, true)
 }
 
-function lookup (type , name , categoryName, catalogNameOrId) {
+csautils.lookupOfferings = function (offeringName , categoryName , catalogNameOrId) {
+	return lookup ("offering" , offeringName , categoryName, catalogNameOrId, false)
+}
+
+function lookup (type , name , categoryName, catalogNameOrId, oneMatchOnly) {
 	return new Promise(function(resolve, reject){
 		
 		log ("lookup " + type)
@@ -57,6 +61,7 @@ function lookup (type , name , categoryName, catalogNameOrId) {
 		postHttpRequest(options)
 		.then(
 			function(itemList){
+				debugger;
 				if (itemList["@total_results"] === 0) {
 					reject("No results were returned from query for "+ name)
 				} else {
@@ -64,7 +69,7 @@ function lookup (type , name , categoryName, catalogNameOrId) {
 					function doesItemMatch(nameProp) {
 						return function(item){
 							return (
-								(item[nameProp] === name) 
+								(item[nameProp].match(name)) 
 								&& 
 								(
 								(item.catalogId === catalogId) || 
@@ -79,12 +84,16 @@ function lookup (type , name , categoryName, catalogNameOrId) {
 						"offering":"displayName",
 						"subscription":"name"
 					}
-					var myItem  = _.find(itemList.members, doesItemMatch(typeToNameProp[type]));
-								
-					if (typeof myItem == "undefined") {
+					var searchResult  = _.filter(itemList.members, doesItemMatch(typeToNameProp[type]));
+					
+					if (typeof searchResult == "undefined") {
 						reject ("An item was found, but it was in a different catalog to the one specified." )
+					} else if (oneMatchOnly && (searchResult.length > 1)) {
+						reject("More than one result matched the search for a " + type + " named " + name)
+					} else if (oneMatchOnly) {
+						resolve(searchResult[0])
 					} else {
-						resolve(myItem)
+						resolve(searchResult)
 					}
 				}
 			}
