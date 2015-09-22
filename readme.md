@@ -77,14 +77,14 @@ In the subscriber options object you can specify either an _option set_ display 
 
 <img src="http://i.imgur.com/Re7dUS0.png" title="source: imgur.com" />
 
-you can grab the default option model by running the following:
+you can grab the option models (including default values) by running the following:
 
 ```js
 login
 .then(function(){
 	return hpcsa.getOptionModels("CSA")
 })
-..then(function(offeringsWithOptions){
+.then(function(offeringsWithOptions){
 	console.log prettyjson.render JSON.parse offeringsWithOptions 
 })
 
