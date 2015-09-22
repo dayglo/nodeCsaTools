@@ -2,7 +2,8 @@ hpcsa = require './hpcsa.js'
 config = require './config.js'
 prettyjson = require 'prettyjson'
 
-log = (text) -> 
+log = (text) ->
+
 	console.log prettyjson.render JSON.parse text 
 
 
@@ -14,22 +15,7 @@ hpcsa.login	config.csaConn.CSA_URI,
 			config.csaConn.IDM_TRANSPORT_PASSWORD ,
 			config.csaConn.REJECT_UNAUTHORIZED 
 .then () ->
-
-	hpcsa.lookupOffering	"CSATesterOffering",
-							"SIMPLE_SYSTEM",
-							"Global Shared Catalog"
+	hpcsa.getOptionModels	"CSA"
 .then (d) ->
+	debugger;
 	log JSON.stringify d 	
-.then ->
-	hpcsa.lookupOffering "CSATesterOffering",
-						 "SIMPLE_SYSTEM",
-						 "90d9650a36988e5d0136988f03ab000f"
-.then (d) ->
-	log JSON.stringify d 
-
-.then () ->
-	hpcsa.lookupOfferings	"CSA",
-							"SIMPLE_SYSTEM",
-							"Global Shared Catalog"
-.then (d) ->
-	log JSON.stringify d 

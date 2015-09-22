@@ -1,6 +1,7 @@
 hpcsa = require './hpcsa.js'
 config = require './config.js'
 moment = require 'moment'
+chalk = require 'chalk'
 
 newSubName = moment().format('YYYY-MM-DDTHH:mm:ss') + ' autotest'
 
@@ -18,9 +19,9 @@ hpcsa.login 	config.csaConn.CSA_URI ,
 				config.csaConn.IDM_TRANSPORT_USER ,
 				config.csaConn.IDM_TRANSPORT_PASSWORD ,
 				config.csaConn.REJECT_UNAUTHORIZED 
-
-.then () ->
 	
+.then () ->
+
 	log "================================================="
 	log "initiating offering lookup"
 	log "================================================="
@@ -29,13 +30,19 @@ hpcsa.login 	config.csaConn.CSA_URI ,
 							"SIMPLE_SYSTEM"
 							"Global Shared Catalog"
 .then logs	
+.then () ->
+	log "================================================="
+	log "initiating offering model lookup"
+	log "================================================="
 
+	hpcsa.getOptionModels	"CSA"
+
+.then logs	
 .then ->
 	hpcsa.lookupOffering	"CSATesterOffering",
 							"SIMPLE_SYSTEM",
 							"90d9650a36988e5d0136988f03ab000f"
 .then logs		
-
 .then ->
 	log "================================================="
 	log "initiating order"
@@ -72,15 +79,17 @@ hpcsa.login 	config.csaConn.CSA_URI ,
 					"Server",
 					"Reboot Server"
 .then logs
-# .then ->
-# 	log "initiating cancel"
-# 	log "================================================="
-# 	hpcsa.cancel		"90d9650a36988e5d0136988f03ab000f",
-# 						"SIMPLE_SYSTEM",
-# 						newSubName
+.then ->
+	log "initiating cancel"
+	log "================================================="
+	hpcsa.cancel		"90d9650a36988e5d0136988f03ab000f",
+						"SIMPLE_SYSTEM",
+						newSubName
 
-# .then logs
-# .then ->
-# 	log "done cancel"
-# 	log "================================================="
-# 		
+.then logs
+.then ->
+	log "done cancel"
+	log "================================================="
+.then null , (e)->
+	log chalk.red "something failed. #{e}"
+		

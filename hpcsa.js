@@ -34,17 +34,65 @@ csautils.lookupOffering = function (offeringName , categoryName , catalogNameOrI
 csautils.lookupOfferings = function (offeringName , categoryName , catalogNameOrId) {
 	return lookup ("offering" , offeringName , categoryName, catalogNameOrId, false)
 }
+csautils.getOfferings = function (searchString , categoryName , catalogNameOrId) {
+	return csautils.lookupOfferings (searchString , categoryName, catalogNameOrId, false)
+	.then(function(offerings){
+		return Promise.all(
+			offerings.map(function(offering){
+				var offeringUrl = csautils.baseUrl + 'csa/api/mpp/mpp-offering/' + offering.id
+				return getCsaData(offeringUrl, {catalogId: offering.catalogId, category: offering.category.name } )()
+			})
+		)
+	})
+}
+csautils.getOptionModels = function (searchString , categoryName , catalogNameOrId) {
+	
+	return csautils.getOfferings( searchString , categoryName, catalogNameOrId)
+	.then(csautils.getVisibleOptions)
+}
+
+csautils.getVisibleOptions = function(offerings){
+
+	return offerings.map(function(offering){
+		debugger;
+		visibleOptions = offering.fields.filter(function(field){
+			return !field.hidden
+		})
+		options = visibleOptions.map(function(field){
+			o = {}
+			if (field.name.match(/^.{8}_(.{4}_){3}.{12}$/)) {
+				o[field.displayName] = field.value
+			} else {
+				o[field.name] = field.value 
+			}
+			return o
+		})
+		return {
+			offeringName: offering.displayName,
+			offeringId: offering.id,
+			category: offering.category.name,
+			catalogId: offering.catalogId ,
+			optionModel: options
+		}
+
+	})
+
+	return Promise.resolve(models);
+}
 
 function lookup (type , name , categoryName, catalogNameOrId, oneMatchOnly) {
 	return new Promise(function(resolve, reject){
 		
+		if (typeof oneMatchOnly === "undefined") {
+			var oneMatchOnly = true
+		}
+
 		log ("lookup " + type)
-		var catalogId = ""
-		var catalogName = ""
-        if (catalogNameOrId.match(/^[0-9A-Fa-f]+$/)) {
-            catalogId = catalogNameOrId
-        } else {
-        	catalogName = catalogNameOrId
+		;
+        var body = {"name": name}
+
+        if (categoryName) {
+        	body.category = categoryName
         }
 
 		var options = {
@@ -52,39 +100,47 @@ function lookup (type , name , categoryName, catalogNameOrId, oneMatchOnly) {
 			url: csautils.baseUrl + 'csa/api/mpp/mpp-'+  type +'/filter' ,
 			headers: csautils.getAuthHeader(),
 			json: true,
-			body: {
-				"name": name,
-				"category":categoryName
-			}
+			body: body
 		}
 
 		postHttpRequest(options)
 		.then(
 			function(itemList){
-				debugger;
+
 				if (itemList["@total_results"] === 0) {
 					reject("No results were returned from query for "+ name)
 				} else {
 
-					function doesItemMatch(nameProp) {
+					function doesItemMatch(nameProp , catalogMatchProperty , catalogMatchValue) {
 						return function(item){
 							return (
 								(item[nameProp].match(name)) 
 								&& 
-								(
-								(item.catalogId === catalogId) || 
-								(item.catalogName === catalogName) 
-								)
+								(item[catalogMatchProperty] === catalogMatchValue)
 							)
 						}
-
 					}
-					;
+
 					var typeToNameProp = {
 						"offering":"displayName",
 						"subscription":"name"
 					}
-					var searchResult  = _.filter(itemList.members, doesItemMatch(typeToNameProp[type]));
+					var catalogId = ""
+					var catalogName = ""
+
+					;
+
+					if (typeof catalogNameOrId === "undefined") {
+						;
+						resolve(itemList.members);
+						return
+					} else if (catalogNameOrId.match(/^[0-9A-Fa-f]+$/)) {
+			            matchFunction = doesItemMatch(typeToNameProp[type] , 'catalogId' , catalogNameOrId) 
+			        } else {
+			        	matchFunction = doesItemMatch(typeToNameProp[type] , 'catalogName' , catalogNameOrId)   
+			        }
+
+					var searchResult  = _.filter(itemList.members, matchFunction);
 					
 					if (typeof searchResult == "undefined") {
 						reject ("An item was found, but it was in a different catalog to the one specified." )
@@ -334,7 +390,7 @@ function pollSub(retry , goodStatuses , badStatuses) {
 			return Promise.reject("timed out while polling subscription status for sub " + reqData.subId);
 		} else {
 			return Promise.resolve(reqData)
-			.then(getSubStatus())
+			.then(getSub())
 			.then(function(subData) {
 				var desc = "    waiting for status of sub to be " + goodStatuses.join(' or ') + " [" + subData.status + "]";
 				log(desc);
@@ -364,7 +420,7 @@ function getRequestStatus() {
 	}
 }
 
-function getSubStatus() {
+function getSub() {
 	return function(reqData){
 		var options = {
 			rejectUnauthorized: false,
@@ -458,7 +514,7 @@ csautils.control = function  (catalogId, categoryName, subName, componentName, a
     })                                             
 }
 
-function getCsaData (url){
+function getCsaData (url,qs){
 	return function(){
 		var options = {
 			rejectUnauthorized: false,
@@ -466,6 +522,10 @@ function getCsaData (url){
 			headers: csautils.getAuthHeader(),
 			json: true,
 		};
+		;
+		if (typeof qs !== "undefined"){
+			options.qs = qs
+		}
 		return getHttpRequest(options)	
 	}
 }
@@ -604,7 +664,7 @@ function httpRequest(options) {
 csautils.getSubIdFromRequest = function() {
 	return function(req){
 		
-		debugger;
+		;
 		if (typeof req.subId !== "undefined") return Promise.resolve (req)
 
 		var options = {
