@@ -1,6 +1,6 @@
 #hpcsa.js
 
-hpcsa is a nodejs library for automating Hewlett Packard's Cloud Service Automation product. You can use it to build testing tools and alternative front end interfaces to your cloud services.
+[hpcsa.js](https://bitbucket.org/automationlogic/hpcsa) is a nodejs library for automating Hewlett Packard's [Cloud Service Automation](http://www8.hp.com/uk/en/software-solutions/cloud-service-automation/) product. You can use it to build testing tools and alternative front end interfaces to your cloud services.
 
 This library uses promises. When you invoke any of the provided methods, a promise will be returned. If you're new to promises, read [this](http://www.html5rocks.com/en/tutorials/es6/promises/) and then come back.
 
