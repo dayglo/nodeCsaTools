@@ -6,7 +6,7 @@ This library uses promises. When you invoke any of the provided methods, a promi
 
 
 ##Install
-run
+In a new, empty folder, run
 ```
 > npm install hpcsa
 ```
