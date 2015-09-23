@@ -1,6 +1,6 @@
 {
   "name": "hpcsa",
-  "version": "2.1.0",
+  "version": "2.1.2",
   "description": "hp csa client library",
   "main": "hpcsa.js",
   "dependencies": {
@@ -17,7 +17,7 @@
     "prfun": "1.0.2",
     "q": "1.2.0",
     "request": "2.54.0",
-    "restler-q": "0.1.1",
+    "restler-q": "^0.1.1",
     "string": "3.1.1",
     "xmldom": "0.1.19",
     "xpath": "0.0.9"

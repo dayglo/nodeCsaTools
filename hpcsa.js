@@ -52,9 +52,7 @@ csautils.getOptionModels = function (searchString , categoryName , catalogNameOr
 }
 
 csautils.getVisibleOptions = function(offerings){
-
 	return offerings.map(function(offering){
-		debugger;
 		visibleOptions = offering.fields.filter(function(field){
 			return !field.hidden
 		})
@@ -74,10 +72,7 @@ csautils.getVisibleOptions = function(offerings){
 			catalogId: offering.catalogId ,
 			optionModel: options
 		}
-
 	})
-
-	return Promise.resolve(models);
 }
 
 function lookup (type , name , categoryName, catalogNameOrId, oneMatchOnly) {
@@ -88,7 +83,6 @@ function lookup (type , name , categoryName, catalogNameOrId, oneMatchOnly) {
 		}
 
 		log ("lookup " + type)
-		;
         var body = {"name": name}
 
         if (categoryName) {
@@ -128,12 +122,9 @@ function lookup (type , name , categoryName, catalogNameOrId, oneMatchOnly) {
 					var catalogId = ""
 					var catalogName = ""
 
-					;
-
 					if (typeof catalogNameOrId === "undefined") {
-						;
 						resolve(itemList.members);
-						return
+						return;
 					} else if (catalogNameOrId.match(/^[0-9A-Fa-f]+$/)) {
 			            matchFunction = doesItemMatch(typeToNameProp[type] , 'catalogId' , catalogNameOrId) 
 			        } else {
@@ -294,8 +285,6 @@ function buildRequestOptions(offeringDoc , newInputData) {
         fields: {}
     })
 }
-
-
 
 csautils.getAuthHeader = function() {
 	return {
@@ -819,7 +808,6 @@ csautils.createSubscriptionDeleter = function() {
 
 		return Promise.all(
 			input.map(function(sub){
-				;
 				log(["      deleting sub" , sub.subName].join(' '))
 				options.url = csautils.baseUrl + 'csa/api/mpp/mpp-subscription/' + sub.requestObjectId;
 				return deleteHttpRequest(options)
@@ -833,26 +821,6 @@ csautils.createSubscriptionDeleter = function() {
 		);
 	}
 }
-
-csautils.editXmlElementText = function(xml,xmlPath,newElementName,value){
-	//TODO: Shouldnt need newElementName, should be able to just replace the text node. 
-	// ah who am i kidding this will never be fixed.
-
-	var doc = new dom().parseFromString(xml);
-	var newIdElement = doc.createElement(newElementName).appendChild(doc.createTextNode(value));
-	oldid = xpath.select(xmlPath, doc , true);
-	oldid.replaceChild(newIdElement.parentNode,oldid);
-	return oldid.ownerDocument.toString();
-
-}
-
-csautils.xpathQuery = function (xml,xPath){
-	var doc = new dom().parseFromString(xml);
-	var selected =  xpath.select(xPath, doc , true);
-	return selected.childNodes[0].data;
-}
-
-
 
  
 module.exports = csautils;
