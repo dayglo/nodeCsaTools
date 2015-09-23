@@ -85,7 +85,7 @@ login
 	return hpcsa.getOptionModels("CSA")
 })
 .then(function(offeringsWithOptions){
-	console.log prettyjson.render JSON.parse offeringsWithOptions 
+	console.log (prettyjson.render(offeringsWithOptions))
 })
 
 // -> 
