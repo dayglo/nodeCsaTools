@@ -102,8 +102,6 @@ login
 //    - 
 //      Gargantuan: false
 //    - 
-//      Project Details: true
-//    - 
 //      PROJECTCODE: P012345
 //    - 
 //      SUPPORTTEAM: OPS
@@ -119,8 +117,6 @@ login
 //      Medium: false
 //    - 
 //      Gargantuan: false
-//    - 
-//      Project Details: true
 //    - 
 //      PROJECTCODE: P012345
 //    - 
