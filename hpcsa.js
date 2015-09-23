@@ -53,12 +53,40 @@ csautils.getOptionModels = function (searchString , categoryName , catalogNameOr
 
 csautils.getVisibleOptions = function(offerings){
 	return offerings.map(function(offering){
-		visibleOptions = offering.fields.filter(function(field){
+		debugger;
+		var triggerMap = getTriggerMap(offering.dependencies);
+
+		var fields = offering.fields.map (function(field){
+			if (field.name.match(/^.{8}_(.{4}_){3}.{12}$/)) {
+				field.isAnOption = true
+			} else {
+				field.isAnOption = false
+			}
+			return field
+		})
+
+		var visibleFields = fields.filter(function(field){
 			return !field.hidden
 		})
-		options = visibleOptions.map(function(field){
+
+		var editableVisibleFields = visibleFields.filter(function(field){
+			if (!field.isAnOption){
+				// is a property
+				return true
+			} else {
+				if (triggerMap[field.id]){
+					//is an option with other options
+					return true
+				} else {
+					// is the only option in a set
+					return false
+				}
+			}
+		})
+
+		var options = editableVisibleFields.map(function(field){
 			o = {}
-			if (field.name.match(/^.{8}_(.{4}_){3}.{12}$/)) {
+			if (field.isAnOption) {
 				o[field.displayName] = field.value
 			} else {
 				o[field.name] = field.value 
