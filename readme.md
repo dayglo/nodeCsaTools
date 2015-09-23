@@ -10,7 +10,7 @@ In a new, empty folder, run
 ```
 > npm install hpcsa
 ```
-and require the module:
+and in your script, require the module:
 ```js
 var hpcsa = require ('hpcsa');
 ```
