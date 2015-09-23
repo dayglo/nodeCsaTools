@@ -77,6 +77,56 @@ In the subscriber options object you can specify either an _option set_ display 
 
 <img src="http://i.imgur.com/Re7dUS0.png" title="source: imgur.com" />
 
+you can grab the option models (including default values) by running the following:
+
+```js
+login
+.then(function(){
+	return hpcsa.getOptionModels("CSA")
+})
+.then(function(offeringsWithOptions){
+	console.log (prettyjson.render(offeringsWithOptions))
+})
+
+// -> 
+//- 
+//  offeringName: CSATesterOffering
+//  offeringId:   2c9030e44f3fd64b014f4173135727e5
+//  category:     SIMPLE_SYSTEM
+//  catalogId:    90d9650a36988e5d0136988f03ab000f
+//  optionModel: 
+//    - 
+//      Small: true
+//    - 
+//      Medium: false
+//    - 
+//      Gargantuan: false
+//    - 
+//      Project Details: true
+//    - 
+//      PROJECTCODE: P012345
+//    - 
+//      SUPPORTTEAM: OPS
+//- 
+//  offeringName: CSATestercles
+//  offeringId:   2c9030e44fdfb913014ff442cbd90006
+//  category:     SIMPLE_SYSTEM
+//  catalogId:    90d9650a36988e5d0136988f03ab000f
+//  optionModel: 
+//    - 
+//      Small: true
+//    - 
+//      Medium: false
+//    - 
+//      Gargantuan: false
+//    - 
+//      Project Details: true
+//    - 
+//      PROJECTCODE: P012345
+//    - 
+//      SUPPORTTEAM: OPS
+ 
+```
 
 ###Modify a subscription
 
@@ -185,6 +235,3 @@ login.then(function(){
 	return Promise.all(promises)
 })
 ```
-
-
-
