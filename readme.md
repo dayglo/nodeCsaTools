@@ -75,7 +75,7 @@ login.then(function(){
 ```
 In the subscriber options object you can specify either an _option set_ display name.  or a _property_ name. The below screenshot shows both types. In the design shown, __Compute Class__ is an option set, and __PROJECTCODE__ is the real name of the Project Code property.
 
-<img src="http://i.imgur.com/Re7dUS0.png" title="source: imgur.com" />
+![csa screenshot](http://i.imgur.com/Re7dUS0.png)
 
 you can grab the option models (including default values) by running the following:
 
