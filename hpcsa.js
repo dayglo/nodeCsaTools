@@ -55,44 +55,51 @@ csautils.getVisibleOptions = function(offerings){
 	return offerings.map(function(offering){
 		debugger;
 		var triggerMap = getTriggerMap(offering.dependencies);
+		var options = {}
 
-		var fields = offering.fields.map (function(field){
-			if (field.name.match(/^.{8}_(.{4}_){3}.{12}$/)) {
-				field.isAnOption = true
-			} else {
-				field.isAnOption = false
-			}
-			return field
-		})
+		//only do work if there are some subscriber options 
+		if (offering.fields) {
 
-		var visibleFields = fields.filter(function(field){
-			return !field.hidden
-		})
+			var fields = offering.fields.map (function(field){
+				if (field.name.match(/^.{8}_(.{4}_){3}.{12}$/)) {
+					field.isAnOption = true
+				} else {
+					field.isAnOption = false
+				}
+				return field
+			})
 
-		var editableVisibleFields = visibleFields.filter(function(field){
-			if (!field.isAnOption){
-				// is a property
-				return true
-			} else {
-				if (triggerMap[field.id]){
-					//is an option with other options
+			var visibleFields = fields.filter(function(field){
+				return !field.hidden
+			})
+
+			var editableVisibleFields = visibleFields.filter(function(field){
+				if (!field.isAnOption){
+					// is a property
 					return true
 				} else {
-					// is the only option in a set
-					return false
+					if (triggerMap[field.id]){
+						//is an option with other options
+						return true
+					} else {
+						// is the only option in a set
+						return false
+					}
 				}
-			}
-		})
+			})
 
-		var options = editableVisibleFields.map(function(field){
-			o = {}
-			if (field.isAnOption) {
-				o[field.displayName] = field.value
-			} else {
-				o[field.name] = field.value 
-			}
-			return o
-		})
+			options = editableVisibleFields.map(function(field){
+				o = {}
+				if (field.isAnOption) {
+					o[field.displayName] = field.value
+				} else {
+					o[field.name] = field.value 
+				}
+				return o
+			})
+
+		}
+
 		return {
 			offeringName: offering.displayName,
 			offeringId: offering.id,

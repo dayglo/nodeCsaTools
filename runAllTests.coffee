@@ -38,6 +38,14 @@ hpcsa.login 	config.csaConn.CSA_URI ,
 	hpcsa.getOptionModels	"CSA"
 
 .then logs	
+.then () ->
+	log "================================================="
+	log "initiating offering model lookup of offering with zero options"
+	log "================================================="
+
+	hpcsa.getOptionModels	"noOptionsTest"
+
+.then logs	
 .then ->
 	hpcsa.lookupOffering	"CSATesterOffering",
 							"SIMPLE_SYSTEM",
