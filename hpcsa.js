@@ -654,6 +654,7 @@ csautils.submitRequestAndWaitForSub = function (action , objectId , catalogId, c
 			reqData = data[0];
 			log(["      request for", action, "on" , reqData.subName , 'was', chalk.green('successful.') , "(requestID:" , reqData.reqId , "subscriptionId:" , reqData.subId , ')'].join(' '));
 			reqData.requestObjectId = objectId
+			reqData.categoryName = categoryName
 			return Promise.resolve(reqData);
 		},function(err){
 			log("      request for " + action + " on " + subName  + chalk.red(' failed') + ': ' + err);
