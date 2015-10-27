@@ -111,6 +111,11 @@ csautils.getVisibleOptions = function(offerings){
 }
 
 function lookup (type , name , categoryName, catalogNameOrId, oneMatchOnly) {
+	//maybe if catalogname and/or category is null, and oneMatchOnly is set, and there's only one result, thats good enough?
+	//stupid csa api.
+
+
+
 	return new Promise(function(resolve, reject){
 		
 		if (typeof oneMatchOnly === "undefined") {
@@ -157,7 +162,10 @@ function lookup (type , name , categoryName, catalogNameOrId, oneMatchOnly) {
 					var catalogId = ""
 					var catalogName = ""
 
-					if (typeof catalogNameOrId === "undefined") {
+					if ((typeof catalogNameOrId === "undefined") && (oneMatchOnly) && (itemList.members.length == 1)) {
+						resolve(itemList.members[0]);
+						return;
+					} else if (typeof catalogNameOrId === "undefined") {
 						resolve(itemList.members);
 						return;
 					} else if (catalogNameOrId.match(/^[0-9A-Fa-f]+$/)) {
@@ -172,6 +180,8 @@ function lookup (type , name , categoryName, catalogNameOrId, oneMatchOnly) {
 						reject ("An item was found, but it was in a different catalog to the one specified." )
 					} else if (oneMatchOnly && (searchResult.length > 1)) {
 						reject("More than one result matched the search for a " + type + " named " + name)
+					} else if (oneMatchOnly && (searchResult.length == 1) && (typeof catalogNameOrId == "undefined")) {
+						resolve(searchResult[0])
 					} else if (oneMatchOnly) {
 						resolve(searchResult[0])
 					} else {
@@ -454,6 +464,7 @@ function getSub() {
 		return getHttpRequest(options)
 	}
 }
+csautils.getSubscription = getSub();
 
 csautils.order = function  (catalogName, categoryName , offeringName , newInputData , subName ) {
 	return csautils.lookupOffering (offeringName , categoryName , catalogName)
