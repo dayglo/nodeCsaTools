@@ -48,8 +48,8 @@ login.then(function(){
 		"Global Shared Catalog", // catalog name
 		"SIMPLE_SYSTEM",         // offering category name
 		"RHEL7 Virtual Server",  // offering name
-		"My redhat server",      // subscription name
 		{},                      // subscriber options
+		"My redhat server",      // subscription name
 	) 
 })
 ```
@@ -64,11 +64,12 @@ login.then(function(){
 		"Global Shared Catalog", 
 		"SIMPLE_SYSTEM",
 		"RHEL7 Virtual Server", 
-		"My redhat server", 
 		{
 			"PROJECTCODE": "P101010"
 			"Compute Class": "Gargantuan"
-		}
+		},
+		"My redhat server"
+
 	)  
 
 })
@@ -131,8 +132,9 @@ login.then(function(){
 	return hpcsa.modify	(
 		"90d9650a36988e5d0136988f03ab000f", // catalog ID
 		"SIMPLE_SYSTEM",                    // category name
-		"My redhat server",                 // your sub name or ID
-		{"Compute Class": "Small"}          // new options
+		"My redhat server"                  // your sub name or ID
+		{"Compute Class": "Small"},         // new options
+
     ) 
 })
 ```
@@ -174,15 +176,15 @@ login
 		"Global Shared Catalog",
 		"SIMPLE_SYSTEM", 
 		"RHEL7 Virtual Server",
-		"My redhat server",
 		{},
+		"My redhat server"
 	)
 ).then(function(){
 	return hpcsa.modify	(
 		"90d9650a36988e5d0136988f03ab000f",
 		"SIMPLE_SYSTEM",
+		{"Compute Class": "Small"},
 		"My redhat server",
-		{"Compute Class": "Small"}
     ) 
 ).then(function(){
 	return hpcsa.cancel (	
@@ -202,22 +204,22 @@ var newSubs = [
 		"Global Shared Catalog",
 		"SIMPLE_SYSTEM", 
 		"Windows 2008 R2 SQL server",
-		"My SQL server",
 		{"COLLATION":"Latin"}
+		"My SQL server",
 	],
-		[
+	[
 		"Global Shared Catalog",
-    	"SIMPLE_SYSTEM", 
-    	"RHEL7 Virtual Server",
-    	"My app server",
-    	{}
-    ],
-    [
+		"SIMPLE_SYSTEM", 
+		"RHEL7 Virtual Server",
+		{}
+		"My app server",
+	],
+	[
 		"Global Shared Catalog",
-    	"SIMPLE_SYSTEM", 
-    	"RHEL7 Virtual Server",
-    	"My web server",
-    	{"Install Apache": true}
+		"SIMPLE_SYSTEM", 
+		"RHEL7 Virtual Server",
+		{"Install Apache": true}
+		"My web server",
     ]
 ]
 
