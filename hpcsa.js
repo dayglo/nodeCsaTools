@@ -39,11 +39,14 @@ csautils.getOfferings = function (searchString , categoryName , catalogNameOrId)
 	.then(function(offerings){
 		return Promise.all(
 			offerings.map(function(offering){
-				var offeringUrl = csautils.baseUrl + 'csa/api/mpp/mpp-offering/' + offering.id
-				return getCsaData(offeringUrl, {catalogId: offering.catalogId, category: offering.category.name } )()
+				return csautils.getOffering(offering.category.name, offering.catalogId, offering.id)
 			})
 		)
 	})
+}
+csautils.getOffering = function(categoryName , catalogId , offeringId) {
+	var offeringUrl = csautils.baseUrl + 'csa/api/mpp/mpp-offering/' + offeringId
+	return getCsaData(offeringUrl, {catalogId: catalogId, category: categoryName} )()
 }
 csautils.getOptionModels = function (searchString , categoryName , catalogNameOrId) {
 	
@@ -53,7 +56,6 @@ csautils.getOptionModels = function (searchString , categoryName , catalogNameOr
 
 csautils.getVisibleOptions = function(offerings){
 	return offerings.map(function(offering){
-		debugger;
 		var triggerMap = getTriggerMap(offering.dependencies);
 		var options = {}
 
@@ -145,7 +147,7 @@ function lookup (type , name , categoryName, catalogNameOrId, oneMatchOnly) {
 					reject("No results were returned from query for "+ name)
 				} else {
 
-					function doesItemMatch(nameProp , catalogMatchProperty , catalogMatchValue) {
+					function doesItemMatch(nameProp , catalogMatchProperty , catalogMatchValue, name) {
 						return function(item){
 							return (
 								(item[nameProp].match(name)) 
@@ -169,9 +171,9 @@ function lookup (type , name , categoryName, catalogNameOrId, oneMatchOnly) {
 						resolve(itemList.members);
 						return;
 					} else if (catalogNameOrId.match(/^[0-9A-Fa-f]+$/)) {
-			            matchFunction = doesItemMatch(typeToNameProp[type] , 'catalogId' , catalogNameOrId) 
+			            matchFunction = doesItemMatch(typeToNameProp[type] , 'catalogId' , catalogNameOrId, name) 
 			        } else {
-			        	matchFunction = doesItemMatch(typeToNameProp[type] , 'catalogName' , catalogNameOrId)   
+			        	matchFunction = doesItemMatch(typeToNameProp[type] , 'catalogName' , catalogNameOrId, name)   
 			        }
 
 					var searchResult  = _.filter(itemList.members, matchFunction);
@@ -468,10 +470,26 @@ csautils.getSubscription = getSub();
 
 csautils.order = function  (catalogName, categoryName , offeringName , newInputData , subName ) {
 	return csautils.lookupOffering (offeringName , categoryName , catalogName)
+    .then(function(offeringSearchResult){
+    	return csautils.getOffering (categoryName , offeringSearchResult.catalogId , offeringSearchResult.id)
+    })
     .then(function(offering){
     	return csautils.submitRequestAndWaitForSub("ORDER" , offering.id , offering.catalogId, categoryName, offering , newInputData ,  subName )()
     })
 }
+
+csautils.safeModify = function (catalogId, categoryName, subId, newInputData) {
+
+    return Promise.resolve({id:subId})
+	.then (function(sub){
+		var subscriptionModifyUrl = csautils.baseUrl + 'csa/api/mpp/mpp-subscription/' + sub.id + '/modify';
+		return getCsaData (subscriptionModifyUrl )()
+	})
+    .then(function(subscription){
+    	log(["MODIFY_SUBSCRIPTION" , subscription.id , catalogId, categoryName, subscription , newInputData ,  subscription.name].join(" - "))
+    	return csautils.submitRequestAndWaitForSub( "MODIFY_SUBSCRIPTION" , subscription.id , catalogId, categoryName, subscription , newInputData ,  subscription.name )()
+    })
+} 
 
 csautils.modify = function  (catalogId, categoryName, subName, newInputData) {
 
@@ -636,7 +654,7 @@ csautils.submitRequestAndWaitForSub = function (action , objectId , catalogId, c
 	return function() {
 
 		var goodRequestStatuses = ['COMPLETED'];
-		var badRequestStatuses = ['REJECTED'];
+		var badRequestStatuses = ['REJECTED','CANCELLED'];
 		var goodSubStatuses = ['ACTIVE'];
 		var badSubStatuses = ['CANCELLED','TERMINATED','EXPIRED'];
 

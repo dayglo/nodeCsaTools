@@ -26,8 +26,8 @@ hpcsa.login 	config.csaConn.CSA_URI ,
 	log "initiating offering lookup"
 	log "================================================="
 
-	hpcsa.lookupOffering	"CSATesterOffering",
-							"SIMPLE_SYSTEM"
+	hpcsa.lookupOffering	"CSATesterOffering2",
+							"SIMPLE_SYSTEM",
 							"Global Shared Catalog"
 .then logs	
 .then () ->
@@ -38,16 +38,16 @@ hpcsa.login 	config.csaConn.CSA_URI ,
 	hpcsa.getOptionModels	"CSA"
 
 .then logs	
-.then () ->
-	log "================================================="
-	log "initiating offering model lookup of offering with zero options"
-	log "================================================="
+# .then () ->
+# 	log "================================================="
+# 	log "initiating offering model lookup of offering with zero options"
+# 	log "================================================="
 
-	hpcsa.getOptionModels	"noOptionsTest"
+# 	hpcsa.getOptionModels	"noOptionsTest"
 
 .then logs	
 .then ->
-	hpcsa.lookupOffering	"CSATesterOffering",
+	hpcsa.lookupOffering	"CSATesterOffering2",
 							"SIMPLE_SYSTEM",
 							"90d9650a36988e5d0136988f03ab000f"
 .then logs		
@@ -58,13 +58,20 @@ hpcsa.login 	config.csaConn.CSA_URI ,
 
 	hpcsa.order		"Global Shared Catalog",
 					"SIMPLE_SYSTEM",
-					"CSATesterOffering",
-					{},
+					"CSATesterOffering2",
+					{"Medium":true},
 					newSubName
 .then logs
 .then ->
 	log "done order"
 	log "================================================="	
+.then ->
+	log "================================================="
+	log "checking order sub accepted the options"
+	log "================================================="
+	hpcsa.lookupSubscription(newSubName, "SIMPLE_SYSTEM", "90d9650a36988e5d0136988f03ab000f")
+	.then (data) ->
+		debugger;
 
 .then ->
 	log "================================================="
@@ -73,7 +80,7 @@ hpcsa.login 	config.csaConn.CSA_URI ,
 	hpcsa.modify	"90d9650a36988e5d0136988f03ab000f",
 					"SIMPLE_SYSTEM",
 					newSubName,
-					{CPU: 5}
+					{CPU: 5, "Gargantuan":true}
 .then logs
 .then ->
 	log "done modify"
