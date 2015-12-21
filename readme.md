@@ -24,7 +24,7 @@ var hpcsa = require ('hpcsa');
 
 var login = hpcsa.login("https://myCsaServer:8444", // your HP CSA server 
 			"consumer",                 // marketplace username
-			"cloud"                     // marketplace password
+			"cloud",                    // marketplace password
 			"CSA_CONSUMER",             // CSA organisation name
 			"idmTransportUser",         // idm username
 			"idmTransportUser",         // idm password
