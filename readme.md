@@ -65,8 +65,8 @@ login.then(function(){
 		"SIMPLE_SYSTEM",
 		"RHEL7 Virtual Server", 
 		{
-			"PROJECTCODE": "P101010"
-			"Compute Class": "Gargantuan"
+			"PROJECTCODE": "P101010",
+			"Gargantuan" : true
 		},
 		"My redhat server"
 
@@ -133,7 +133,7 @@ login.then(function(){
 		"90d9650a36988e5d0136988f03ab000f", // catalog ID
 		"SIMPLE_SYSTEM",                    // category name
 		"My redhat server"                  // your sub name or ID
-		{"Compute Class": "Small"},         // new options
+		{"Small" :true},                    // new options
 
     ) 
 })
@@ -183,7 +183,7 @@ login
 	return hpcsa.modify	(
 		"90d9650a36988e5d0136988f03ab000f",
 		"SIMPLE_SYSTEM",
-		{"Compute Class": "Small"},
+		{"Small" : true},
 		"My redhat server",
     ) 
 ).then(function(){
