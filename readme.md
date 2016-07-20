@@ -1,6 +1,6 @@
 #hpcsa.js
 
-The main repo for this project is over on [bitbucket](https://bitbucket.org/automationlogic/hpcsa). This is just a mirror.
+The main repo for this project is over on [bitbucket](https://bitbucket.org/automationlogic/hpcsa). The github one is just a mirror.
 
 [hpcsa.js](https://bitbucket.org/automationlogic/hpcsa) is a nodejs library for automating Hewlett Packard's [Cloud Service Automation](http://www8.hp.com/uk/en/software-solutions/cloud-service-automation/) product. You can use it to build testing tools and alternative front end interfaces to your cloud services.
 
